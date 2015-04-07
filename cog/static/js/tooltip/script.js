@@ -4,7 +4,7 @@ var tooltip=function(){
 	var id = 'tt';
 	var top = -14; // vertical position above project short name
 	var left = 0;
-    var size = '198px';
+    //var size = '198px';
 	var maxw = 209;  // = size (w) + whatever padding is wanted to take outside the project browser
 	var speed = 10;
 	var timer = 20;
@@ -34,7 +34,7 @@ var tooltip=function(){
                     cell_1.style.background = '#666666';
                     cell_1.style.color='white';
                     cell_1.style.fontSize='12px';
-                    cell_1.style.width = size;
+                    cell_1.style.width = '198px';
                     cell_1.style.paddingLeft = '8px'; // no idea what default is. This is large but look like less when rendered
                     row.appendChild(cell_1);
                     tblBody.appendChild(row);
