@@ -4,7 +4,7 @@ var tooltip=function(){
 	var id = 'tt';
 	var top = -14; // vertical position above project short name
 	var left = 0;
-    var size = "198px";
+    var size = '198px';
 	var maxw = 209;  // = size (w) + whatever padding is wanted to take outside the project browser
 	var speed = 10;
 	var timer = 20;
@@ -33,9 +33,9 @@ var tooltip=function(){
                     //cell_1.style.background = '#f2e886';
                     cell_1.style.background = '#666666';
                     cell_1.style.color='white';
-                    cell_1.style.fontSize="12px";
+                    cell_1.style.fontSize='12px';
                     cell_1.style.width = size;
-                    cell_1.style.paddingLeft = "8px"; // no idea what default is. This is large but look like less when rendered
+                    cell_1.style.paddingLeft = '8px'; // no idea what default is. This is large but look like less when rendered
                     row.appendChild(cell_1);
                     tblBody.appendChild(row);
 
@@ -60,13 +60,13 @@ var tooltip=function(){
                     cell_2 = document.createElement('td');
                     cell_2.appendChild(sjm);
                     cell_2.style.verticalAlign = 'bottom';
-                    cell_2.style.padding = "0";
+                    cell_2.style.padding = '0';
                     row.appendChild(cell_2); // append arrow to row
 
                     tblBody.appendChild(row); // append row to tbody
                     tbl.appendChild(tblBody); // append tbody to table
-                    document.body.appendChild(tbl); // add table to the display
 
+                    document.body.appendChild(tbl); // add table to the display
                     tbl.style.opacity = 0;
                     tbl.style.filter = 'alpha(opacity=0)';
                     tbl.style.width = w ? w + 'px' : 'auto'; //width comes from w, height is automatic
@@ -89,7 +89,10 @@ var tooltip=function(){
 				//b.style.display = 'block';
 			}
 			
-			if(tbl.offsetWidth > maxw){tbl.style.width = maxw + 'px'}
+			if(tbl.offsetWidth > maxw){
+                tbl.style.width = maxw + 'px';
+            }
+
 			h = parseInt(tbl.offsetHeight) + top;
 			clearInterval(tbl.timer);
 			tbl.timer = setInterval(function(){tooltip.fade(1)},timer);
