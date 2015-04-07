@@ -77,7 +77,7 @@
                 
                 	{% if not request.user.is_anonymous %}
                      <input class="right_go" style="width:60px; margin:0" type="submit" value="Save Tag" id="saveUserTag"
-	                         onclick="saveUserTag();"/>	                   
+	                         onclick="saveUserTag(); gotoTab(3);"/>
 	                   
 	                {% endif %}
 
@@ -88,7 +88,7 @@
 
                     <input class="right_go" style="float:right; margin:0;"
 	                   type="submit" value="Go" id="projectBrowserButton"
-	                   onclick="document.getElementById('projectBrowserText'); loadProjectBrowser('{{project.short_name}}');  "/>
+	                   onclick="document.getElementById('projectBrowserText'); loadProjectBrowser('{{project.short_name}}'); gotoTab(1); "/>
 	                   
 	                <!-- form to save a user tag -->
 	                <form action="{% url 'save_user_tag' %}" method="post" id="save-user-tag-form">
