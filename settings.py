@@ -5,6 +5,7 @@ import re
 
 rel = lambda *x: os.path.join(os.path.abspath(os.path.dirname(__file__)), *x)
 
+
 ''' 
 SITE SPECIFIC CONFIGURATION
 These parameters are read from file 'cog_settings.cfg' 
