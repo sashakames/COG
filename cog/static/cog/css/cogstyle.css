@@ -884,7 +884,7 @@ BEGIN VERTICAL MENU (LEFT NAVBAR)
     float:           left;
     margin:          0 2px 0 0;
     padding:         7px 6px;     /******** size of upper nav buttons */
-    letter-spacing:  3px;
+    letter-spacing:  2px;
     position:        relative;
     text-decoration: none;
     /*text-transform:  uppercase;*/
