@@ -859,8 +859,90 @@ BEGIN VERTICAL MENU (LEFT NAVBAR)
 	    font-weight:   bold;
 	    color:         #666;
 	    background-color: #FCE79F; /* dark yellow */
+}
+
+.site-navigation {
+    display: block;
+    font-size: 11px; /********** size of text */
+    font-weight: bold;
+    margin: 0;
+    /*font-family: 'Titillium Web', sans-serif;*/
+}
+
+.site-navigation ul {
+    background:   #358C92; /* dark teal */
+    list-style:   none;
+    margin:       0;
+    padding-left: 0;
+    visibility: visible;
+}
+
+.site-navigation li {
+    color:           #fff;
+    background:      #358C92; /* dark teal */
+    display:         block;
+    float:           left;
+    margin:          0 2px 0 0;
+    padding:         7px 6px;     /******** size of upper nav buttons */
+    letter-spacing:  3px;
+    position:        relative;
+    text-decoration: none;
+    /*text-transform:  uppercase;*/
+}
+
+.site-navigation ul li ul li{
+    background: #FAC24A; /* dark yellow */
+}
+
+.site-navigation li a {
+  color:           #fff;
+  text-decoration: none;
+  display:         block;
+}
+
+.site-navigation li:hover {
+    @include transition(background, 0.2s);
+    /*background: #B9E0E3; /* light teal */
+    background: #FAC24A; /* dark yellow */
+    cursor:     pointer;
+}
+
+.site-navigation li:hover a {
+    color:      black;
+}
+
+.site-navigation ul li ul {
+    visibility:  hidden;
+    float:       left;
+    min-width:   160px;      /******* width of subnav menu */
+    position:    absolute;
+    /*transition:  visibility 0.2s ease-in;*/
+    margin-top:  8px;  /* space between upper menu and hover menu */
+    left:        0;
+    z-index:     999;
+}
+
+.site-navigation ul li:hover > ul,
+.site-navigation ul li ul:hover {
+   visibility: visible;
 
 }
+
+.site-navigation ul li ul li {
+    clear:   both;
+    padding: 5px;
+    width:   100%;
+
+}
+
+.site-navigation ul li ul li:hover {
+    /*background: #B9E0E3;  /* light teal */
+    /* background: #FAC24A; /* dark yellow */
+    text-decoration: underline;
+    color:black;
+}
+
+
 
 .left_widget_header {
             margin:          0;
@@ -1448,8 +1530,8 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
     height: 20px;
     margin: 0 auto;
     padding:  0;
-    background: #FFFFFF;
-    color: #FFFFFF;
+    /* background: #358C92; */
+    background: white;
     font-size: 9pt;
     font-weight: bold;
     font-style: normal;
@@ -1465,12 +1547,21 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
     height:       20px;
 }
 
+/* bar that shows up when there are sub-navigation links */
 #top_subnav_left {
-	padding-top: 2px;
-	padding-left: 6px;
-	width: 100%;
+    float:            left;
+    position:         relative;
+	padding-top:      2px;
+	/*padding-left:     6px;*/
+	width:            100%;
+    height:           20px;
 	background-color: #B9E0E3;
-	float:left;
+}
+
+#subnav_link_box{
+    position:absolute;
+    background-color: #B9E0E3;
+
 }
 
 #top_subnav_left a:link, #top_subnav_left a:visited {
@@ -1484,7 +1575,7 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
 	padding-left:     5px;      /* make yellow box line up with rest of the right widgets */
     background-color: #FAC24A; /*dark yellow*/
 	float:            right;
-    height:           22px;
+    height:           26px;
 }
 
 #top_nav_right a {
@@ -1492,7 +1583,13 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
     padding: 0;
     padding-top:4px;
     padding-bottom:4px;
-    padding-right: 4px;
+    /*padding-right: 4px;*
+
+    /* delete if we remove hover menu */
+    text-transform:  uppercase;
+    font-size: 10px;
+    padding-right: 6px;
+    letter-spacing: 2px;
 }
 
 #top_subnav {
@@ -1516,6 +1613,7 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
 	color: #666;
 }
 
+/*
 .top_nav ul {
     margin:0;
     padding: 0 0 0 0;
@@ -1532,17 +1630,19 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
     display: block;
     margin-right: 3px;
     /* COG STYLE: TOP NAV BAR TEXT */
-    text-decoration: none;
+    /*text-decoration: none;
     /* padding: top-right-bottom-left */
-    padding: 2px 6px 6px 6px;
-    font-weight: bold;
-    color: #FFFFFF;
-    border: none;
+    /*padding: 2px 6px 6px 6px;
+    /*font-weight: bold;
+    /*color: #FFFFFF;*/
+    /*border: none;
 }
 
+/*
 .top_nav a:hover {
     text-decoration: underline;
 }
+*/
 
 #top_subnav_right a {
 	display: inline;
@@ -1552,4 +1652,5 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
 	margin:0;
 	text-align: center;
 	font-size: 8.5pt;
+
 }

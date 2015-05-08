@@ -406,6 +406,50 @@ def getTopNav(project, request):
 
 
 @register.filter
+def getTopNav_2(project, request):
+
+    taburl = getTopTabUrl(project, request)
+
+    tabs = []
+    ptabs = get_or_create_project_tabs(project, save=True)
+    # project tabs have full URLs:
+    # (u'Contact Us', u'/projects/cog/contactus/')
+    # (u'Mission', u'/projects/cog/aboutus/mission/')
+    # .....
+    for ptablist in ptabs:
+        tablist = []
+        selected = False
+        for idx, ptab in enumerate(ptablist):
+            label = ptab.label
+
+            if idx == 0:  # upper level tabs (idx=0)
+                # change label name
+                if 'Home' in label:    # remove project short name from 'Home' tab
+                    label = 'Home'
+                if ptab.active:  # selected to be visible in the upper nav bar
+                    if str(ptab.url) == taburl:
+                        selected = True
+                    tablist.append((label, ptab.url, selected))
+            # sub-tabs
+            else:
+                #if selected and ptab.active:
+                    #_selected = False
+                    #if request.path == ptab.url:
+                        #_selected = True
+                    #tablist.append((label, ptab.url, _selected))
+
+                if ptab.active:
+                    _selected = False
+                    if request.path == ptab.url:
+                        _selected = True
+                    tablist.append((label, ptab.url, _selected))
+
+        tabs.append(tablist)
+    return tabs
+
+
+
+@register.filter
 def getTopTabStyle(tablist, selected):
     """Method to return the top-tab CSS style, depending on whether it is selected, and it has sub-tabs."""
 
