@@ -862,11 +862,10 @@ BEGIN VERTICAL MENU (LEFT NAVBAR)
 }
 
 .site-navigation {
-    display: block;
-    font-size: 11px; /********** size of text */
+    display:     block;
+    font-size:   12px; /********** size of text */
     font-weight: bold;
-    margin: 0;
-    /*font-family: 'Titillium Web', sans-serif;*/
+    margin:      0;
 }
 
 .site-navigation ul {
@@ -874,7 +873,7 @@ BEGIN VERTICAL MENU (LEFT NAVBAR)
     list-style:   none;
     margin:       0;
     padding-left: 0;
-    visibility: visible;
+    visibility:   visible;
 }
 
 .site-navigation li {
@@ -883,15 +882,16 @@ BEGIN VERTICAL MENU (LEFT NAVBAR)
     display:         block;
     float:           left;
     margin:          0 2px 0 0;
-    padding:         7px 6px;     /******** size of upper nav buttons */
-    letter-spacing:  2px;
+    padding:         4px 4px;     /******** size of upper nav buttons */
+    letter-spacing:  1px;
     position:        relative;
     text-decoration: none;
     /*text-transform:  uppercase;*/
 }
 
 .site-navigation ul li ul li{
-    background: #FAC24A; /* dark yellow */
+    /*background: #FAC24A; /* dark yellow */
+    background: #B9E0E3;
 }
 
 .site-navigation li a {
@@ -902,13 +902,13 @@ BEGIN VERTICAL MENU (LEFT NAVBAR)
 
 .site-navigation li:hover {
     @include transition(background, 0.2s);
-    /*background: #B9E0E3; /* light teal */
-    background: #FAC24A; /* dark yellow */
+    background: #B9E0E3; /* light teal */
+    /*background: #FAC24A; /* dark yellow */
     cursor:     pointer;
 }
 
 .site-navigation li:hover a {
-    color:      black;
+    color:      #666;
 }
 
 .site-navigation ul li ul {
@@ -917,7 +917,7 @@ BEGIN VERTICAL MENU (LEFT NAVBAR)
     min-width:   160px;      /******* width of subnav menu */
     position:    absolute;
     /*transition:  visibility 0.2s ease-in;*/
-    margin-top:  8px;  /* space between upper menu and hover menu */
+    margin-top:  4px;  /* space between upper menu and hover menu */
     left:        0;
     z-index:     999;
 }
@@ -939,7 +939,7 @@ BEGIN VERTICAL MENU (LEFT NAVBAR)
     /*background: #B9E0E3;  /* light teal */
     /* background: #FAC24A; /* dark yellow */
     text-decoration: underline;
-    color:black;
+    color:#666;
 }
 
 
@@ -1527,11 +1527,11 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
 /* TOP NAV */
 .top_nav {
     width: 100%;
-    height: 20px;
+    height: 23px;
     margin: 0 auto;
     padding:  0;
-    /* background: #358C92; */
-    background: white;
+    background: #358C92;
+    /*background: white;*/
     font-size: 9pt;
     font-weight: bold;
     font-style: normal;
@@ -1544,7 +1544,7 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
 	width:        100%;
 	background:   #358C92;
 	float:        left;
-    height:       20px;
+    height:       23px;
 }
 
 /* bar that shows up when there are sub-navigation links */
@@ -1575,21 +1575,22 @@ BEGIN non-CUSTOMIZABLE HEADER STYLES
 	padding-left:     5px;      /* make yellow box line up with rest of the right widgets */
     background-color: #FAC24A; /*dark yellow*/
 	float:            right;
-    height:           26px;
+    height:           23px;
+    vertical-align:   middle;
 }
 
 #top_nav_right a {
-	color: #000000;
-    padding: 0;
-    padding-top:4px;
-    padding-bottom:4px;
+	color:           #000000;
+    padding:         0;
+    padding-top:     0;
+    padding-bottom:  3px;
     /*padding-right: 4px;*
 
     /* delete if we remove hover menu */
-    text-transform:  uppercase;
-    font-size: 10px;
-    padding-right: 6px;
-    letter-spacing: 2px;
+    /*text-transform:  uppercase;*/
+    font-size:        12px;
+    padding-right:     6px;
+    letter-spacing:    1px;
 }
 
 #top_subnav {
