@@ -52,6 +52,7 @@ def aboutus_display(request, project_short_name, tab):
         template_form_pages = {reverse('people_update', args=[project_short_name, tab]): 'People'}
     else:
         template_form_pages = {reverse('aboutus_update', args=[project_short_name, tab]): 'About Us'}
+
     template_title = TAB_LABELS[tab]
     return templated_page_display(request, project_short_name, tab, template_page, template_title, template_form_pages)
 
@@ -152,6 +153,9 @@ def impacts_update(request, project_short_name, tab):
                 instance.order = 1
                 instance.save()
 
+            for obj in formset.deleted_objects:
+                obj.delete()
+
             redirect = reverse('aboutus_display', args=[project_short_name, tab])
             return HttpResponseRedirect(redirect)
 
@@ -228,8 +232,9 @@ def partners_update(request, project_short_name, tab):
     # Organization specific parameters
     clazz = Organization
     formset_factory = modelformset_factory(Organization,
-                                            form=OrganizationForm,  # explicit reference to form to use custom text widgets
-                                            extra=3, can_delete=True, exclude=('project',))
+                                           # explicit reference to form to use custom text widgets
+                                           form=OrganizationForm,
+                                           extra=3, can_delete=True, exclude=('project',))
     queryset = Organization.objects.filter(project=project).order_by('name')
 
     form_template = 'cog/project/partners_form.html'
@@ -286,7 +291,7 @@ def _imageformset_update(request, project, tab,
                 if (instance.id is not None                      # instance is not new (i.e. it's already in database)
                     and instance.image is not None               # instance contains an image
                     and instance.image.name is not None
-                    and not upload_dir in instance.image.name): # image has been newly selected
+                    and not upload_dir in instance.image.name):  # image has been newly selected
                     obj = clazz.objects.get(pk=instance.id)
                     try:
                         deleteImageAndThumbnail(obj)

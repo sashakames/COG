@@ -8,7 +8,7 @@
 
     <!-- Begin User Profile -->
     <!-- NOTE: the full page is 19+5=24 columns wide. The last 5 columns are reserved for the picture. -->
-    <div class="span-24 last">
+    <div class="span-max last">
         
         <!-- display extra message if it exists -->
         {% if request.GET.message %}
@@ -18,12 +18,12 @@
             </div>
         {% endif %}
     
-        <!-- display a message and link to the user's Home Site -->
+        <!-- display a message and link to the user's Home Node -->
         {% if user_profile.user|isRemote %}
             
-            <div class="span-19 last">
+            <div class="span-max last">
                 <div class="message-box">
-                    User Home Site: {{ user_profile.site.name }}
+                    User Home Node: {{ user_profile.site.name }}
                 </div>
                 <br/>
                 <div style="text-align: center">
@@ -33,8 +33,9 @@
             
         {% else %}
 
-	        <div class="span-19 last" style="margin-bottom:10px;" >
+	        <div class="span-max last" style="margin-bottom:10px;" >
 	        
+	        	<!-- update links -->
 	            {% if request.user.id == user_profile.user.id or request.user.is_staff %}
 	                <div style="text-align:center;">
 	                    <a href="{% url 'user_update' user_profile.user.id %}">Update profile |</a>
@@ -43,7 +44,8 @@
 	                        <a href="{% url 'password_update' user_profile.user.id %}">Change password</a>
 	                    {% else %}
 	                        {% if user_profile.openid %}
-	                            <a href="http://{{ user_profile.openid|get_domain }}/">Change my password</a> (at the site that issued your OpenID)
+	                            <a href="http://{{ user_profile.openid|get_domain }}/">Change my password</a> (at the
+		                        node that issued your OpenID)
 	                        {% else %}
 	                            Sorry, your account is not associated with any OpenID. 
 	                            <br/>Please contact <a href="mailto:cog_support@list.woc.noaa.gov">cog_support@list.woc.noaa.gov</a> to change your password.
@@ -51,100 +53,62 @@
 	                    {% endif %}
 	                </div>
 	            {% endif %}
+	            
 	        </div>
 
-            <!-- extra style here is to ensure spacing between the boxes matches the spacing (e.g. 10px) on the main pages. Note .mybox has a 5px margin. Just adding 5px; -->
-            <div class="span-11" style="margin-bottom:5px;">
-               {% include 'cog/account/_user_profile.html' %}
-            </div>
+			
+	        <div class="span-max last" style="margin-bottom:10px;" >
+	        
+	        	<!--  left column: photo and joined information  -->
+		        <div class="span-5">
+                   <img  style="border-radius: 10px; max-width:190px; display:block;margin:auto;" 
+                   		src="{{ user_profile.user|getImage }}" 
+                   		{% if user_profile.image %}
+		                	class="myimage" alt="picture of {{ user_profile.user.get_full_name }}" {% endif %} />
+                   <p style="font-size:16pt;margin-bottom:5px; text-align:center; text-overflow: ellipsis; overflow:hidden;">
+			            <strong>
+				            {{ user_profile.user.first_name }}
+				            {{ user_profile.user.last_name }}
+			            </strong>
+                   </p>
+		           {% if user.is_staff or user_profile.user == user %}
+			           <p style="font-size:16pt;color:#666;margin-top:0; margin-bottom:5px; text-align:center;">
+			               <strong>
+				              {{ user_profile.user.username }}
+			               </strong>
+                       </p>
+			       {%  endif %}
+		           <p style="font-size:13px;text-align:center;"> Joined on: <br> {{ user_profile.user.date_joined }}     
+	            </div>
+	            
+                <!-- extra style here is to ensure spacing between the boxes matches the spacing (e.g. 10px) on the main pages. 
+                     Note .mybox has a 5px margin. Just adding 5px; -->
+                     
+                <!--  center column -->
+                <div class="span-12" style="margin-bottom:5px;">
+                   {% include 'cog/account/_user_profile.html' %}
+                   {% include 'cog/account/_user_openids.html' %}
+                   {% include 'cog/account/_user_research.html' %}
+                   
+                   <!-- Extra block for Node Admins to display key user info we don't show the public-->
+                   {% include 'cog/account/_user_extra_info.html' %}
+                   
+                </div>
 
-            <div class="span-8" style="margin-bottom:5px;">
-               {% include 'cog/account/_user_projects.html' %}
-            </div>
+	            <!-- right column -->
+                <div class="span-11 last" style="margin-bottom:5px;">
+                   {% include 'cog/account/_user_projects.html' %}
+                   
+                   <!-- ESGF groups -->
+                   {% if request.user.id == user_profile.user.id or request.user.is_staff %}
+                   		{% include 'cog/account/_user_groups.html' %}
+                   {% endif %}
+                   
+                </div>
 
-            <div class="span-5 last">
-               <img src="{{ user_profile.user|getImage }}" {% if user_profile.image %} class="myimage" alt="picture of {{ user_profile.user.get_full_name }}" {% endif %}/>
-            </div>
+	        </div>
 
-            <div class="span-19 last" style="margin-bottom:5px;" >
-               {% include 'cog/account/_user_openids.html' %}
-            </div>
-
-            <div class="span-19 last" style="margin-bottom:5px;" >
-              {% include 'cog/account/_user_research.html' %}
-            </div>
         {% endif %}
     </div>
-    
-    <!-- Extra block for Site Admins to display key user info we don't show the public-->
-    {% if request.user.is_staff %}
-        <div class="prepend-4 span-14 last" style="margin-bottom:20px;">
-            <div class="mybox">
-                <table>
-                    <tr>
-                        <td class="caption_mimic" colspan="2">
-                            <strong>Extra User Information (Site Administrators Only)</strong>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <strong>Email</strong>
-                        </td>
-                        <td>
-                            {{ user_profile.user.email }}
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <strong>Subscribed to cog_info?</strong>
-                        </td>
-                        <td>
-                            {% if user_profile.subscribed %}
-                                Yes
-                            {% else %}
-                                No
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <strong>Home Site</strong>
-                        </td>
-                        <td>{{ user_profile.site.name }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Account Created</strong></td>
-                        <td>{{ user_profile.user.date_joined }}
-
-                    <tr>
-                        <td>
-                            <strong>Last Login</strong>
-                        </td>
-                        <td>{{ user_profile.user.last_login }}</td>
-                    </tr>
-                    {% if user_profile.user.date_joined == user_profile.user.last_login  %}
-                         <tr>
-                             <td colspan="2">
-                                POSSIBLE FAKE OR DUPLICATE ACCOUNT
-                             </td>
-                         </tr>
-                    {% endif %}
-                    <tr>
-                        <td>
-                            <strong>Last Password Update</strong>
-                        </td>
-                        <td>{{ user_profile.last_password_update }}</td>
-                    </tr>
-
-                    <tr>
-                        <td colspan="2" style="text-align: center;">
-                            Note: CoG keeps users logged in via a cookie. Last Login may be different from last access.
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-    {% endif %}
     
 {% endblock %}

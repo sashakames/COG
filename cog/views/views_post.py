@@ -19,6 +19,7 @@ from django.utils.timezone import now
 from cog.models.utils import delete_doc
 from django.conf import settings
 import os
+from cog.views.utils import getQueryDict, paginate
 
 
 # view to render a generic post
@@ -146,46 +147,55 @@ def project_home(request, project_short_name):
 def post_list(request, project_short_name):
     
     project = get_object_or_404(Project, short_name__iexact=project_short_name)
+
     # query by project
     qset = Q(project=project)
-           
+
+    #TODO: remove type query if not needed (type is all posts)
     # query by type
-    type = request.GET.get('type', None)
+    #type = request.GET.get('type', None)
+    type = 'post'
     qset = qset & Q(type=type)
-    list_title = 'All %ss' % type.capitalize()
-    
+    list_title = 'List All Pages'
+
+    #TODO: remove text query if not needed
     # text query
     query = request.GET.get('query', '')
-    if query:
-        qset = qset & (Q(title__icontains=query) | Q(body__icontains=query) | Q(author__first_name__icontains=query) |
-                       Q(author__last_name__icontains=query) | Q(author__username__icontains=query))
-        list_title = "Search Results for '%s'" % query
+    #if query:
+    #    qset = qset & (Q(title__icontains=query) | Q(body__icontains=query) | Q(author__first_name__icontains=query) |
+    #                   Q(author__last_name__icontains=query) | Q(author__username__icontains=query))
+     #   list_title = "Search Results for '%s'" % query
     
     # topic constraint
     topic = request.GET.get('topic', '')
-    if topic:
-        qset = qset & Q(topic__name=topic)
-        list_title += ' [topic=%s]' % topic
+    #if topic:
+    #    qset = qset & Q(topic__name=topic)
+    #    list_title += ' [topic=%s]' % topic
         
     # execute query, order by descending update date or title
     sortby = request.GET.get('sortby', 'title')
     if sortby == 'date':
-        results = Post.objects.filter(qset).distinct().order_by('-update_date')
+        results = Post.objects.filter(project=project).distinct().order_by('-update_date')
+    elif sortby == 'topic':
+        results = Post.objects.filter(project=project).distinct().order_by('-topic')
     else:
-        results = Post.objects.filter(qset).distinct().order_by('title')
+        results = Post.objects.filter(project=project).distinct().order_by('title')
                 
     # list all possible topics for posts of this project, and of given type
     # must follow the foreign key relation Post -> Topic backward (through 'topic.post_set')
+
+	#TODO: remove topic list if not used
     #topic_list = Topic.objects.all().order_by('name')
     topic_list = Topic.objects.filter(Q(post__project=project) & Q(post__type=type)).distinct().order_by('-name')
 
     return render_to_response('cog/post/post_list.html', 
-                              {"object_list": results, 
-                               "title": "%s %ss" % (project.short_name, type.capitalize()),
+                              {"object_list": paginate(results, request, max_counts_per_page=50),
+                               "title": '%s Pages' % project.short_name,
                                "list_title": list_title,
                                "query": query,  
                                "project": project,
-                               "topic": topic, "topic_list": topic_list},
+                               "topic": topic,
+                               "topic_list": topic_list},
                               context_instance=RequestContext(request))
 
 
@@ -205,7 +215,7 @@ def post_add(request, project_short_name, owner=None):
         return HttpResponseForbidden(PERMISSION_DENIED_MESSAGE)
 
     # retrieve type
-    type = request.REQUEST.get('type')
+    type = getQueryDict(request).get('type')
   
     if request.method == 'GET':
         
@@ -363,8 +373,9 @@ def post_update(request, post_id):
         form = PostForm(post.type, post.project, request.POST, instance=post)
 
         # check versions       
-        if post.version != int(request.REQUEST.get('version', -1)):
-            print 'database version=%s form version=%s' % (post.version, request.REQUEST.get('version', -1))
+        queryDict = getQueryDict(request)
+        if post.version != int(queryDict.get('version', -1)):
+            print 'database version=%s form version=%s' % (post.version, queryDict.get('version', -1))
             return getLostLockRedirect(request, post.project, post, lock)
 
         #print "1 PAGE URL=%s" % form.data['url']

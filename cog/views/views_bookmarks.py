@@ -56,11 +56,17 @@ def bookmark_list(request, project_short_name):
     template_title = "Resources"
     template_form_name = None
 
-    return render_to_response('cog/common/rollup.html', 
-                              {'project': project, 'title': '%s %s' % (project.short_name, template_title), 
-                               'template_page': template_page, 'template_title': template_title, 'template_form_name':
-                                  template_form_name,
-                               'children': children, 'peers': peers},
+    # change render template to 'cog/common/rollup_tabbed.html' to turn on tabbed rollups.
+
+    return render_to_response('cog/common/rollup_accordion.html',
+                              {'project': project,
+                               'title': '%s %s' % (project.short_name, template_title),
+                               # 'title': template_title,
+                               'template_page': template_page,
+                               'template_title': template_title,
+                               'template_form_name': template_form_name,
+                               'children': children,
+                               'peers': peers},
                               context_instance=RequestContext(request))
 
     
@@ -232,7 +238,7 @@ def folder_add(request, project_short_name):
         # project is used to sub-select the parent folder options
         form = FolderForm(project, 
                           instance=folder, 
-                          initial = { 'redirect': request.GET.get('next', None) })
+                          initial={'redirect': request.GET.get('next', None)})
         return render_folder_form(request, project, form)
     
     else:
@@ -248,7 +254,7 @@ def folder_add(request, project_short_name):
             folder.save()
             
             redirect = form.cleaned_data['redirect']
-            if redirect is not None and redirect.lower()!='none' and len(redirect.strip())>0:
+            if redirect is not None and redirect.lower() != 'none' and len(redirect.strip()) > 0:
                 return HttpResponseRedirect(redirect)
             else:
                 # redirect to bookmark add page
@@ -345,6 +351,7 @@ def render_bookmark_form(request, project, form):
                               {'project': project, 'form': form, 'title': 'Resource Form'},
                               context_instance=RequestContext(request))     
     
+
 @login_required
 def bookmark_add_notes(request, project_short_name, bookmark_id):
     
@@ -355,5 +362,5 @@ def bookmark_add_notes(request, project_short_name, bookmark_id):
     project = bookmark.folder.project
     
     # invoke generic view
-    #return add_notes(request, project, bookmark)
+    # return add_notes(request, project, bookmark)
     return post_add(request, project.short_name, owner=bookmark)

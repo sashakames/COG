@@ -24,7 +24,7 @@ from urllib import quote
 
 
 # method to retrieve all news for a given project, ordered by original publication date
-def news(project):
+def project_news(project):
     qset = Q(project=project) | Q(other_projects=project)
     return News.objects.filter(qset).distinct().order_by('-publication_date')
 
@@ -274,21 +274,6 @@ def setActiveProjectTabs(tabs, request, save=False):
     return tabs
 
 
-def getUnsavedProjectSubFolders(project, request):
-    """
-    Function to create the project top-level sub-folders, in the appropriate state,
-    WITHOUT PERSISTING THEM TO THE DATABASE.
-    """
-    
-    folders = []
-    for key, value in TOP_SUB_FOLDERS.items():
-        folder = Folder(name=value, project=project, active=False)
-        if request is not None and ("folder_%s" % value) in request.REQUEST.keys():
-            folder.active = True
-        folders.append(folder)
-    return folders
-
-
 def createOrUpdateProjectSubFolders(project, request=None):
     """
     Function to set the state of the top sub-folders, creating them if necessary.
@@ -399,6 +384,16 @@ def deleteProject(project, dryrun=True, rmdir=False):
     print '\tDeleting group: %s' % ag
     if not dryrun:
         ag.delete()
+
+    # delete project Contributor group, permissions
+    cg = project.getContributorGroup()
+    for p in cg.permissions.all():
+        print '\tDeleting permission: %s' % p
+        if not dryrun:
+            p.delete()
+    print '\tDeleting group: %s' % cg
+    if not dryrun:
+        cg.delete()
 
     if rmdir:
         media_dir = os.path.join(settings.MEDIA_ROOT, settings.FILEBROWSER_DIRECTORY, project.short_name.lower())

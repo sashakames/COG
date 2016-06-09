@@ -18,6 +18,7 @@ from cog.models.doc import get_upload_path
 from cog.models.utils import delete_doc
 from cog.views.constants import VALID_ORDER_BY_VALUES, VALID_FILTER_BY_VALUES
 import os
+from cog.views.utils import getQueryDict, paginate
 
 
 @csrf_exempt
@@ -109,11 +110,10 @@ def doc_add(request, project_short_name):
             folder = form.cleaned_data['folder']
             if folder is not None:
                 # must use full URL since Bookmark.url is of type URLField
-                url = request.build_absolute_uri( doc.file.url )
+                url = request.build_absolute_uri(doc.file.url)
                 bookmark = Bookmark.objects.create(name=doc.title, url=url, folder=folder, 
                                                    description=doc.description, order=len(folder.bookmark_set.all()))
-                
-            
+
             # optional redirect
             redirect = form.cleaned_data['redirect']
             if redirect:
@@ -158,7 +158,6 @@ def doc_download(request, path):
         return doc_download_private(request, path, doc)
     else:
         return serve(request, path, document_root=settings.PROJECTS_ROOT)
-        
 
 
 def data_download(request, path):
@@ -207,7 +206,7 @@ def doc_remove(request, doc_id):
     delete_doc(doc)
         
     # redirect to original page, or to project home if not found
-    redirect = request.REQUEST.get('redirect', None)
+    redirect = getQueryDict(request).get('redirect', None)
     if redirect is None:
         redirect = reverse('project_home', kwargs={'project_short_name': project.short_name.lower()})
     
@@ -302,7 +301,8 @@ def doc_list(request, project_short_name):
     list_title = "Total Number of Matching Documents: %d" % len(results)
    
     return render_to_response('cog/doc/doc_list.html', 
-                              {"object_list": results, 'project': project, 'title': '%s Files' % project.short_name,
+                              {"object_list": paginate(results, request, max_counts_per_page=100),
+                               'project': project, 'title': '%s Files' % project.short_name,
                                "query": query, "order_by": order_by, "filter_by": filter_by, "list_title":
                                   list_title},
                               context_instance=RequestContext(request))

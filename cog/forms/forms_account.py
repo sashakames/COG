@@ -5,7 +5,7 @@ from django.forms import (Form, ModelForm, CharField, PasswordInput, TextInput, 
 from cog.models import *
 from django.core.exceptions import ObjectDoesNotExist
 import re
-from django.contrib.auth.models import check_password
+from django.contrib.auth.hashers import check_password
 from os.path import exists
 from cog.models.constants import UPLOAD_DIR_PHOTOS
 from cog.forms.forms_image import ImageForm
@@ -15,6 +15,8 @@ from django_openid_auth.models import UserOpenID
 import imghdr
 from captcha.fields import CaptchaField
 from cog.forms.forms_utils import validate_image
+from cog.plugins.esgf.security import esgfDatabaseManager
+from cog.models.user_profile import createUsername
 
 # list of invalid characters in text fields
 #INVALID_CHARS = "[^a-zA-Z0-9_\-\+\@\.\s,()\.;-]"
@@ -83,7 +85,8 @@ class UsernameReminderForm(Form):
 class PasswordChangeForm(Form):
 
     username = CharField(required=True, widget=TextInput(attrs={'size':'50'}))  # the target user
-    requestor = CharField(required=True, widget=TextInput(attrs={'size':'50'}))  # the user reuesting the change (same as target user, or a site administrator)
+    requestor = CharField(required=True, widget=TextInput(attrs={'size':'50'}))  # the user requesting the change (
+    # same as target user, or a node administrator)
     old_password = CharField(required=True, widget=PasswordInput(render_value=True, attrs = { "autocomplete" : "off", }))
     password = CharField(required=True, 
                      # trigger javascript function when input field looses focus
@@ -110,9 +113,10 @@ class PasswordChangeForm(Form):
             # load requestor by username
             requestor = User.objects.get(username=self.cleaned_data.get('requestor'))
             
-            # check OpenID was issued by this site
+            # check OpenID was issued by this node
             if user.profile.localOpenid() is None:
-                self._errors["username"] = self.error_class(["Non local user: password must be changed at site that issued the OpenID."])
+                self._errors["username"] = self.error_class(["Non local user: password must be changed at the node "
+                                                             "that issued the OpenID."])
     
             # normal user: check current password
             old_password = self.cleaned_data.get('old_password')
@@ -247,6 +251,8 @@ def validate_username(form, user_id):
         cleaned_data = form.cleaned_data
 
         username = cleaned_data.get("username")
+        
+        # validate username string
         if username:
             if len(username) < 5:
                 form._errors["username"] = form.error_class(["'Username' must contain at least 5 characters."])
@@ -254,12 +260,25 @@ def validate_username(form, user_id):
                 form._errors["username"] = form.error_class(["'Username' must not exceed 30 characters."])
             elif re.search(INVALID_USERNAME_CHARS, username):
                 form._errors["username"] = form.error_class(["'Username' can only contain letters, digits and @/./+/-/_"])
-            try:
-                # perform case-insensitive lookup of username, compare with id from form instance
-                user =  User.objects.all().get(username__iexact=username)
-                if user!=None and user.id != user_id:
-                    form._errors["username"] = form.error_class(["Username already taken in database."])
-            except ObjectDoesNotExist:
+                
+            if settings.ESGF_CONFIG:
+                # check that the corresponding OpenID is available in the local CoG database
+                if user_id is None: # do not check when instance is updated
+                    openid = esgfDatabaseManager.buildOpenid(username)
+                    
+                    if esgfDatabaseManager.checkOpenid(openid):
+                        form._errors["username"] = form.error_class(["Username/OpenID already taken in database."])
+                        
+                    else:
+                        # save this openid in the form data so it can be used by the view POST method
+                        form.cleaned_data['openid'] = openid      
+                        
+                        # once the openid is validated, choose the closest possible username
+                        _username = createUsername(username)
+                        print 'Created username=%s from=%s' % (_username, username)
+                        cleaned_data['username'] = _username # override form data
+            else:
+                # django will automatically check that the username is unique in the CoG database
                 pass
 
 # method to validate a generic field against bad characters

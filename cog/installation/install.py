@@ -6,7 +6,6 @@ It uses the configuration settings from $COG_CONFIG_DIR/cog_settings.cfg
 import os
 import cog
 from cog.constants import SECTION_EMAIL
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from django.conf import settings
         
 from django.contrib.auth.models import User
@@ -15,14 +14,15 @@ from django.contrib.sites.models import Site
 
 from cog.models import Project
 from cog.models import UserProfile
+from cog.models import PeerSite
 from cog.views.views_project import initProject
 
 from cog.installation.constants import (DEFAULT_PROJECT_SHORT_NAME, ESGF_ROOTADMIN_PASSWORD_FILE, 
                                         DEFAULT_ROOTADMIN_PASSWORD, ROOTADMIN_USERNAME)
 from cog.plugins.esgf.security import esgfDatabaseManager
 from django_openid_auth.models import UserOpenID
+from django.core.exceptions import ObjectDoesNotExist
 
-from django import setup as django_setup
 from django.core import management
 import sqlalchemy
 import datetime
@@ -36,10 +36,7 @@ class CoGInstall(object):
     '''
     
     def __init__(self):
-        
-        # in stand-alone scripts, must explicitly invoke django.setup() to populate the application registry before anything can be done
-        django_setup()
-        
+                
         # read cog_settings.cfg
         self.siteManager = SiteManager()
     
@@ -71,11 +68,11 @@ class CoGInstall(object):
         management.call_command("makemigrations","django_comments") 
         management.call_command("migrate","--fake-initial")
         management.call_command("migrate")
-        management.call_command("collectstatic", interactive=False)
+        management.call_command("collectstatic", interactive=False, verbosity=0)
         
         # custom management commands
         management.call_command("init_site")
-        management.call_command("sync_sites")
+        management.call_command("sync_sites")  # updates list of CoG peers from sites.xml
         
     def _createPostgresDB(self):
         '''Method to create the Postgres database if not existing already.'''
@@ -138,21 +135,38 @@ class CoGInstall(object):
                 password = DEFAULT_ROOTADMIN_PASSWORD
             user.set_password(password)
             user.save()
-            
-            # if this openid already exists in ESGF database, simply associate it with the User object
-            # later, this will prevent creating a new openid for this same user (see account_created_receiver)
-            # if not, creating the UserProfile object will trigger the creation of the same openid (in CoG and ESGF)
-            if settings.ESGF_CONFIG:
-                openid = esgfDatabaseManager.buildOpenid(ROOTADMIN_USERNAME)
-                if esgfDatabaseManager.checkOpenid(openid):
-                    UserOpenID.objects.create(user=user, claimed_id=openid, display_id=openid)
-                    logging.info("Openid=%s already exists in ESGF database, assigning it to CoG administrator" % openid)
-            
+                        
             # create UserProfile object
             userp = UserProfile(user=user, institution='Institution', city='City', state='State', country='Country',
                                 site=site, last_password_update=datetime.datetime.now())
             userp.clearTextPassword=password # needed by esgfDatabaseManager, NOT saved as clear text in any database
             userp.save()
+            
+            # ESGF database setup
+            if settings.ESGF_CONFIG:
+                
+                # create rootAdmin openid: https://<ESGF_HOSTNAME>/esgf-idp/openid/rootAdmin
+                openid = esgfDatabaseManager.buildOpenid(ROOTADMIN_USERNAME)
+                UserOpenID.objects.create(user=user, claimed_id=openid, display_id=openid)
+                logging.info("Created openid:%s for CoG administrator: %s" % (openid, user.username) )
+                
+                # insert rootAdmin user in ESGF database
+                logging.info("Inserting CoG administrator: %s in ESGF database" % user.username)
+                esgfDatabaseManager.insertEsgfUser(user.profile)
+
+            
+        # must create and enable 'esgf.idp.peer" as federated CoG peer
+        if settings.IDP_REDIRECT is not None and settings.IDP_REDIRECT.strip()  != '':
+            idpHostname = settings.IDP_REDIRECT.lower().replace('http://','').replace('https://','')
+            try:
+                idpPeerSite = PeerSite.objects.get(site__domain=idpHostname)
+                idpPeerSite.enabled=True
+                idpPeerSite.save()
+            except ObjectDoesNotExist:
+                site = Site.objects.create(name=idpHostname, domain=idpHostname)
+                idpPeerSite = PeerSite.objects.create(site=site, enabled=True)
+            print '\tCreated IdP Peer site: %s with enabled=%s' % (idpPeerSite, idpPeerSite.enabled)
+
             
     def _getRootAdminPassword(self):
         '''Tries to read the rootAdmin password from the ESGF standard location '/esg/config/.esgf_pass',

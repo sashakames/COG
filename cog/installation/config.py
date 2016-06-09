@@ -27,10 +27,11 @@ import collections
 import logging
 import os
 import time
+from django.utils.crypto import get_random_string
 
 from constants import (SECTION_DEFAULT, SECTION_ESGF, SECTION_EMAIL,
                        ESGF_PROPERTIES_FILE, ESGF_PASSWORD_FILE, 
-                       IDP_WHITELIST, KNOWN_PROVIDERS,
+                       IDP_WHITELIST, KNOWN_PROVIDERS, PEER_NODES,
                        DEFAULT_PROJECT_SHORT_NAME)
 
 
@@ -110,14 +111,15 @@ class CogConfig(object):
             logging.warn("ESGF database password file: %s could not found or could not be read" % ESGF_PASSWORD_FILE) 
                 
                 
-    def _safeSet(self, key, value, section=SECTION_DEFAULT):
-        '''Method to set a configuration option, without overriding an existing value.'''
+    def _safeSet(self, key, value, section=SECTION_DEFAULT, override=False):
+        '''Method to set a configuration option, without overriding an existing value
+            (unless explicitly requested).'''
         
         if not self.cogConfig.has_section(section):
             if section != SECTION_DEFAULT: 
                 self.cogConfig.add_section(section) # "The DEFAULT section is not acknowledged."
             
-        if not self.cogConfig.has_option(section, key):
+        if override or not self.cogConfig.has_option(section, key):
             self.cogConfig.set(section, key, value)
         
     def _safeGet(self, key, default=None, section=SECTION_DEFAULT):
@@ -136,7 +138,7 @@ class CogConfig(object):
         self._safeSet('SITE_NAME', hostName.upper())
         self._safeSet('SITE_DOMAIN', hostName)
         self._safeSet('TIME_ZONE', 'America/Denver')
-        self._safeSet('SECRET_KEY','<change this to a random sequence of characters 20 or more and dont share it>')
+        self._safeSet('SECRET_KEY', get_random_string(length=128))
         self._safeSet('COG_MAILING_LIST','cog_info@list.woc.noaa.gov')
         if self.esgf: # ESGF: use postgres by default
             self._safeSet('DJANGO_DATABASE','postgres')
@@ -149,7 +151,6 @@ class CogConfig(object):
         self._safeSet('DATABASE_USER', self._safeGet("db.user") )
         self._safeSet('DATABASE_PASSWORD', self._safeGet("db.password"))
         self._safeSet('DATABASE_PORT', self._safeGet("db.port", default='5432'))
-        
         self._safeSet('MEDIA_ROOT','%s/site_media' % COG_CONFIG_DIR)
         # default project to where '/' requests are redirected
         self._safeSet('HOME_PROJECT', DEFAULT_PROJECT_SHORT_NAME)
@@ -160,7 +161,11 @@ class CogConfig(object):
         # optional number of days after which password expire
         self._safeSet('PASSWORD_EXPIRATION_DAYS','0')
         # optional top-level URL to redirect user registration (no trailing '/')
-        self._safeSet('IDP_REDIRECT','') # no redirect by default
+        idpPeer = self._safeGet("esgf.idp.peer", default='')
+        if hostName != idpPeer:
+            self._safeSet('IDP_REDIRECT', 'https://%s' % idpPeer) # redirect to specified "esgf.idp.peer"
+        else:
+            self._safeSet('IDP_REDIRECT','') # no redirect by default
         # DEBUG setting: must be False for production servers to avoid broadcasting detailed system paths
         self._safeSet('DEBUG', 'False')
         # ALLOWED_HOSTS = [] must be included if DEBUG=False
@@ -169,6 +174,15 @@ class CogConfig(object):
         self._safeSet('IDP_WHITELIST', IDP_WHITELIST)
         # KNOWN_PROVIDERS = /esg/config/esgf_known_providers.xml
         self._safeSet('KNOWN_PROVIDERS', KNOWN_PROVIDERS)
+        # PEER_NODES = /esg/config/esgf_cogs.xml
+        self._safeSet('PEER_NODES', PEER_NODES)
+        # option to send SESSION and CSRF cookies via SSL only - requires full SSL-encrypted site
+        self._safeSet('PRODUCTION_SERVER', True)
+        # ESGF software stack version
+        esgfVersion = self._safeGet("version", default=None)
+        if esgfVersion:
+            self._safeSet('ESGF_VERSION', esgfVersion, override=True)
+
         
         #[ESGF]
         if self.esgf:
@@ -196,6 +210,7 @@ class CogConfig(object):
         cfgfile = open(CONFIGFILEPATH,'w')
         self.cogConfig.write(cfgfile)
         cfgfile.close()
+        logging.info("Written CoG configuration file: %s" % CONFIGFILEPATH) 
         
     
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 {% extends "layouts/layout_main_right.html" %}
+<!--LAYOUT: /common/layout_center_right.html-->
 
 {% block head %}
 
@@ -6,7 +7,6 @@
     {% include 'cog/common/yui.html' %} 
     {% include 'cog/common/yui_panels.html' %}    
     {% include 'cog/common/cog_js.html' %} 
-    {% include 'cog/common/cim.html' %} 
     {% include 'cog/common/wiki.html' %}   
     {% include 'cog/common/google_analytics.html' %}
     {% include 'cog/common/right_column_css.html' %}
@@ -14,6 +14,7 @@
 {% endblock %}
 
 {% block main %}
+	<!--LAYOUT: /common/layout_center_right.html-->
     {{ project }}
 {% endblock %}
 

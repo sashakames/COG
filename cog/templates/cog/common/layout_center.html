@@ -1,6 +1,4 @@
 {% extends "layouts/layout_main.html" %}
-<!--LOCATION: /cog/templates/cog/common/layout_center.html-->
-<!--EXTENDS: /layouts/templates/layouts/layout_main.html-->
 
 {% block head %}
 
@@ -10,8 +8,6 @@
     {% include 'cog/common/yui_panels.html' %}    
 
     {% include 'cog/common/cog_js.html' %}
-   
-    {% include 'cog/common/cim.html' %} 
     
     {% include 'cog/common/wiki.html' %}   
     
@@ -20,6 +16,8 @@
 {% endblock %}
 
 {% block main %}
+	<!--LAYOUT: /cog/templates/cog/common/layout_center.html-->
+    <!--EXTENDS: /layouts/templates/layouts/layout_main.html-->
     {{ project }}
 {% endblock %}
 

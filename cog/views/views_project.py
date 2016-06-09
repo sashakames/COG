@@ -22,7 +22,7 @@ from cog.services.membership import addMembership
 from cog.utils import *
 from cog.views.constants import PERMISSION_DENIED_MESSAGE, LOCAL_PROJECTS_ONLY_MESSAGE
 from cog.views.views_templated import templated_page_display
-from cog.views.utils import add_get_parameter
+from cog.views.utils import add_get_parameter, getQueryDict
 from cog.models.auth import userHasAdminPermission, userHasUserPermission, userHasContributorPermission
 
 # method to add a new project, with optional parent project
@@ -31,7 +31,7 @@ def project_add(request):
     
     if request.method == 'GET':
         
-        # associate project to current site
+        # associate project with current node
         current_site = Site.objects.get_current()
         project = Project(active=False, author=request.user, site=current_site)
         
@@ -44,7 +44,7 @@ def project_add(request):
                 return HttpResponseForbidden(PERMISSION_DENIED_MESSAGE)
             project.parent = parent
         else:
-            # check permission: only site administrators can create top-level projects
+            # check permission: only node administrators can create top-level projects
             #if not request.user.is_staff:
             #    return HttpResponseForbidden(PERMISSION_DENIED_MESSAGE)
             parent = None
@@ -53,10 +53,13 @@ def project_add(request):
         tabs = get_or_create_project_tabs(project, save=False)
         
         # create list of unsaved project folders
-        folders = getUnsavedProjectSubFolders(project, request)
+        folders = _getUnsavedProjectSubFolders(project, request)
 
         # set project to be private by default on start-up
         project.private = True
+        
+        # set project to be shared by default
+        project.shared = True
         
         form = ProjectForm(instance=project)
 
@@ -84,13 +87,13 @@ def project_add(request):
             # create folders with appropriate state
             createOrUpdateProjectSubFolders(project, request)
             
-            # notify site administrator
+            # notify node administrator
             notifySiteAdminsOfProjectRequest(project, request)
             
             # display confirmation message
             mytitle = 'New Project Confirmation'
             messages = ['Thank you for registering project: %s' % project.short_name,
-                        'Your request will be reviewed by the site administrators as soon as possible,',
+                        'Your request will be reviewed by the node administrators as soon as possible,',
                         'and you will be notified of the outcome by email.']
             return render_to_response('cog/common/message.html',
                                       {'mytitle': 'New Project Confirmation', 'messages': messages},
@@ -108,7 +111,7 @@ def project_add(request):
                 setActiveProjectTabs(tablist, request, save=False)
                 
             # rebuild list of unsaved project folders
-            folders = getUnsavedProjectSubFolders(project, request)
+            folders = _getUnsavedProjectSubFolders(project, request)
 
             return render_to_response('cog/project/project_form.html', 
                                       {'form': form, 'title': 'Register New Project', 'action': 'add', 'tabs': tabs,
@@ -116,8 +119,6 @@ def project_add(request):
                                       context_instance=RequestContext(request))
             
 # method to reorganize the project index menu
-
-
 @login_required
 def project_index(request, project_short_name):
     
@@ -316,7 +317,7 @@ def project_delete(request, project_short_name):
     else:
         
         # delete all project objects
-        deleteProject(project)
+        deleteProject(project, dryrun=False, rmdir=True)
         
         # redirect to admin index
         return HttpResponseRedirect(reverse('site_home'))
@@ -386,28 +387,7 @@ def render_contactus_form(request, project, form):
                               context_instance=RequestContext(request))
     
 
-# method to delete a project and all its associated groups, permissions
-def deleteProject(project):
-    
-    print "Deleting project: %s" % project.short_name
-    
-    # note: project posts and tabs are automatically deleted because of one-to-many relationship to project
-        
-    # delete permissions
-    # note: if permissions didn't exit, they would be created first, then deleted
-    #project.getUserPermission().delete()
-    #project.getAdminPermission().delete()
-    
-    # delete groups
-    # note: if groups didn't exit, they would be created first, then deleted
-    project.getUserGroup().delete()
-    project.getAdminGroup().delete()
-            
-    # delete project
-    project.delete()
-
-
-# function to notify the site administrators that a new project has been requested
+# function to notify the node administrators that a new project has been requested
 def notifySiteAdminsOfProjectRequest(project, request):
     
     url = reverse('project_update', kwargs={'project_short_name': project.short_name.lower()})
@@ -425,7 +405,7 @@ def notifyAuthorOfProjectApproval(project, request):
         url = project.home_page_url()
         url = request.build_absolute_uri(url)
         subject = "New Project Registration Confirmation"
-        message = "Congratulations, the project you requested: %s has been approved by the site administrator(s).\n" \
+        message = "Congratulations, the project you requested: %s has been approved by the node administrator(s).\n" \
                   "The project home page is: %s" \
                   % (project.short_name, url)
         notify(project.author, subject, message)
@@ -630,12 +610,13 @@ def project_browser(request, project_short_name, tab):
 @login_required
 def save_user_tag(request):
     
-    # POST: when local user submits form, GET: when remote user is redirected to this site
+    # POST: when local user submits form, GET: when remote user is redirected to this node
     if request.method == 'POST' or request.method == 'GET':
         
         # retrieve tag
-        tagName = request.REQUEST['tag']
-        redirect = request.REQUEST['redirect']
+        queryDict = getQueryDict(request)
+        tagName = queryDict['tag']
+        redirect = queryDict['redirect']
         print 'Saving user tag: %s' % tagName
         print 'Eventually redirecting to: %s' % redirect
         
@@ -658,7 +639,7 @@ def save_user_tag(request):
             request.session['PROJECT_BROWSER_TAB'] = 3                
             return HttpResponseRedirect(redirect)
     
-        # redirect request to user home site
+        # redirect request to user home node
         else:
             url = "http://%s%s?tag=%s&redirect=%s" % (request.user.profile.site.domain, reverse('save_user_tag'),
                                                       tagName, redirect)
@@ -674,11 +655,12 @@ def save_user_tag(request):
 @login_required
 def delete_user_tag(request):
     
-    # POST: when local user submits form, GET: when remote user is redirected to this site
+    # POST: when local user submits form, GET: when remote user is redirected to this node
     if request.method == 'POST' or request.method == 'GET':
 
-        tagName = request.REQUEST['tag']
-        redirect = request.REQUEST['redirect']
+        queryDict = getQueryDict(request)
+        tagName = queryDict['tag']
+        redirect = queryDict['redirect']
         print 'Deleting user tag: %s' % tagName
         print 'Eventually redirecting to: %s' % redirect
         
@@ -697,7 +679,7 @@ def delete_user_tag(request):
             request.session['PROJECT_BROWSER_TAB'] = 3
             return HttpResponseRedirect(redirect)
                 
-        # redirect request to user home site
+        # redirect request to user home node
         else:
             url = "http://%s%s?tag=%s&redirect=%s" % (request.user.profile.site.domain, reverse('delete_user_tag'),
                                                       tagName, redirect)
@@ -821,10 +803,13 @@ def listBrowsableProjects(project, tab, tag, user, widgetName):
     for prj in projects:
         prjtags = list(prj.tags.all())
         if prj.isRemoteAndDisabled():
-            # filter out projects from peer sites that are NOT enabled
+            # filter out projects from peer nodes that are NOT enabled
             pass
         elif not prj.active:
             # do not add
+            pass
+        elif not prj.isLocal() and not prj.shared:
+            # filter out projects from remote sites that are not shared
             pass
         # only display projects that are visible to the user
         elif prj.isNotVisible(user):
@@ -962,3 +947,17 @@ def render_development_form(request, project, form):
                               {'title' : 'Development Overview Update', 'project': project, 'form':form},
                                context_instance=RequestContext(request))
 
+
+def _getUnsavedProjectSubFolders(project, request):
+    """
+    Function to create the project top-level sub-folders, in the appropriate state,
+    WITHOUT PERSISTING THEM TO THE DATABASE.
+    """
+    
+    folders = []
+    for key, value in TOP_SUB_FOLDERS.items():
+        folder = Folder(name=value, project=project, active=False)
+        if request is not None and ("folder_%s" % value) in getQueryDict(request).keys():
+            folder.active = True
+        folders.append(folder)
+    return folders

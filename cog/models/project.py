@@ -115,6 +115,10 @@ class Project(models.Model):
     # by default all projects are public, and must be explicitly made private
     private = models.BooleanField(default=False, blank=False, null=False)
     
+    # a shared project is visible to all CoGs across the federation
+    # by default all projects are shared
+    shared = models.BooleanField(default=True, blank=False, null=False)
+    
     # optional custom logo
     logo = models.ImageField(upload_to='logos/', blank=True, null=True)
     
@@ -134,7 +138,12 @@ class Project(models.Model):
     forumNotificationEnabled = models.BooleanField(default=False, blank=False, null=False,
                                                    help_text='Enable forum notifications to project administrators ?')
     
-    maxUploadSize = models.IntegerField(default=52428800, blank=True, null=False,
+    # flag to enable the peer widget
+    nodesWidgetEnabled = models.BooleanField(default=False, blank=False, null=False, 
+                                             help_text='Enable federated nodes widget ?')
+    
+    
+    maxUploadSize = models.IntegerField(default=settings.MAX_UPLOAD_SIZE, blank=True, null=False,
                                         help_text='Maximum upload size in bytes')
     
     # test field
@@ -145,7 +154,7 @@ class Project(models.Model):
                 
     def getAbsoluteUrl(self):
         """
-        Returns the absolute home page URL for this project, keeping its site into account.
+        Returns the absolute home page URL for this project, keeping its node into account.
         """
         
         return "http://%s%s" % (self.site.domain, reverse('project_home', args=[self.short_name.lower()]))
@@ -316,9 +325,13 @@ class Project(models.Model):
     
     def isRemoteAndDisabled(self):
         """
-        Returns True if the project is NOT local and its remote site is disabled.
+        Returns True if the project is NOT local and its remote node is disabled.
         """
-        return not self.isLocal() and not self.site.peersite.enabled
+        
+        try:
+            return not self.isLocal() and not self.site.peersite.enabled
+        except:
+            return True # do NOT display in case of error
     
     # method to return an ordered list of the project predefined pages
     # the page URLs returned start with the project home page base URL
@@ -360,7 +373,7 @@ class Project(models.Model):
 
 # PROJECT UTILITY METHODS
 
-# function to return the site administrators (aka web masters) for this site
+# function to return the node administrators (aka web masters) for this node
 def getSiteAdministrators():
     return User.objects.filter(is_staff=True)
 
@@ -451,6 +464,5 @@ def create_upload_directory(project):
     if not os.path.exists(fb_upload_dir):
         os.makedirs(fb_upload_dir)
         print 'Project Upload directory created: %s' % fb_upload_dir
-
 
 

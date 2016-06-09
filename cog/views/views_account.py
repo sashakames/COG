@@ -3,7 +3,7 @@ import urllib
 from urlparse import urlparse
 
 from django.contrib.auth import logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.hashers import is_password_usable
 from django.contrib.auth.views import login
 from django.contrib.sites.models import Site
@@ -21,7 +21,7 @@ from cog.models import *
 from cog.notification import notify, sendEmail
 from cog.plugins.esgf.security import esgfDatabaseManager
 from cog.util.thumbnails import *
-from cog.views.utils import set_openid_cookie, get_all_projects_for_user
+from cog.views.utils import set_openid_cookie, get_all_shared_user_info
 from django.http.response import HttpResponseForbidden
 
 
@@ -52,7 +52,7 @@ def custom_login_complete(request, **kwargs):
     Method invoked after successful OpenID login.
     Overridden to create user profile after first successful OpenID login.
     """
-
+    
     # authenticate user
     response = login_complete(request, **kwargs)
 
@@ -64,15 +64,19 @@ def custom_login_complete(request, **kwargs):
             
         except ObjectDoesNotExist:
 
-            # retrieve user home site            
+            print 'Discovering site for user with openid=%s' % openid
+            
+            # retrieve user home node
             site = discoverSiteForUser(openid)
             if site is None: 
-                # set user home site to current site
+                # set user home node to current node
                 site = Site.objects.get_current()
+                
+            print 'User site=%s... creating user profile...' % site
                 
             # create new ESGF/OpenID login, type=2: ESGF
             UserProfile.objects.create(user=request.user, institution='', city='', country='', type=2, site=site)
-
+            
             # create user datacart
             DataCart.objects.create(user=request.user)
             
@@ -84,12 +88,13 @@ def custom_login_complete(request, **kwargs):
 
 
 def _custom_login(request, response):
-
+    
     # successful login
     if not request.user.is_anonymous():
                 
         # missing information
         if isUserLocal(request.user) and not isUserValid(request.user):
+            print 'User is local but some information is missing, redirecting to user update page'
             return HttpResponseRedirect(reverse('user_update', kwargs={'user_id': request.user.id}) +
                                         "?message=incomplete_profile")
         
@@ -126,12 +131,17 @@ def notifyAdminsOfUserRegistration(user):
 def notifyUserOfRegistration(user):
     
     subject = "CoG Account Creation"
-    message = "Thank you for creating a new CoG account."
+    message = "Thank you for creating a new ESGF-CoG account."
     message += "\n"
     message += "\nYour User Name is: %s" % user.username
     message += "\nYour OpenID is: %s" % user.profile.openid()
     message += "\n"
     message += "\nPlease note that you will need your OpenID to login."
+    message += "\n"
+    message += "\nCoG Tutorials: https://www.earthsystemcog.org/projects/cog/tutorials_web"
+    message += "\n"
+    message += "\nCoG Support: cog_support@list.woc.noaa.gov"
+
     notify(user, subject, message)
 
 
@@ -170,7 +180,7 @@ def user_add(request):
     # redirection URL
     _next = request.GET.get('next', None) or request.POST.get('next', None)
     
-    # redirect to another site if necessary
+    # redirect to another node if necessary
     if redirectToIdp():
         redirect_url = settings.IDP_REDIRECT + request.path
         if _next is not None:
@@ -179,38 +189,41 @@ def user_add(request):
         return HttpResponseRedirect(redirect_url)
 
     # create URLs formset
-    UserUrlFormsetFactory = modelformset_factory(UserUrl, form=UserUrlForm, exclude=('profile',), can_delete=True,
-                                                 extra=2)
-    UserOpenidFormsetFactory = modelformset_factory(UserOpenID, form=UserOpenidForm, can_delete=True, extra=2, fields="__all__")
+    UserUrlFormsetFactory = modelformset_factory(UserUrl, form=UserUrlForm, exclude=('profile',), 
+                                                 can_delete=True, extra=2)
             
     if request.method == 'GET':
 
-        form = UserForm( initial={'next':_next} )  # initialize form with redirect URL
-        formset1 = UserUrlFormsetFactory(queryset=UserUrl.objects.none(), prefix='url')           # empty formset
-        # NOTE: currently openid formset is not really used when first creating COG users
-        formset2 = UserOpenidFormsetFactory(queryset=UserOpenID.objects.none(), prefix='openid')  # empty formset
+        form = UserForm(initial={'next': _next})  # initialize form with redirect URL
+        formset = UserUrlFormsetFactory(queryset=UserUrl.objects.none(), prefix='url')           # empty formset
 
-        return render_user_form(request, form, formset1, formset2, title='Create User Profile')
+        return render_user_form(request, form, formset, title='Create User Profile')
 
     else:
         # form with bounded data
         form = UserForm(request.POST, request.FILES,)
         # formset with bounded data
-        formset1 = UserUrlFormsetFactory(request.POST, queryset=UserUrl.objects.none(), prefix='url')
-        # formset with bounded data
-        formset2 = UserOpenidFormsetFactory(request.POST, queryset=UserOpenID.objects.none(), prefix='openid')
+        formset = UserUrlFormsetFactory(request.POST, queryset=UserUrl.objects.none(), prefix='url')
 
-        if form.is_valid() and formset1.is_valid() and formset2.is_valid():
+        if form.is_valid() and formset.is_valid():
 
             # create a user from the form but don't save it to the database yet because the password is not encoded yet
             user = form.save(commit=False)
+            
             # must reset the password through the special method that encodes it correctly
             clearTextPassword = form.cleaned_data['password']
             user.set_password(clearTextPassword)
-
+                        
             # save user to database
             user.save()
-            print 'Created user=%s' % user.get_full_name()
+            print 'Created user=%s' % user.username
+            
+            # create openid
+            if settings.ESGF_CONFIG:
+                openid = form.cleaned_data['openid']
+                print 'Creating openid=%s' % openid
+                userOpenID = UserOpenID.objects.create(user=user, claimed_id=openid, display_id=openid)
+                print 'Added openid=%s for user=%s into COG database' % (openid, user.username)
 
             # use additional form fields to create user profile
             userp = UserProfile(user=user,
@@ -226,17 +239,22 @@ def user_add(request):
                                 image=form.cleaned_data['image'],
                                 last_password_update=datetime.datetime.now())
 
-            userp.clearTextPassword = clearTextPassword  # NOTE: this field is NOT persisted
             
-            # save user profile --> will trigger userProfile post_save and consequent creation of openid
+            # save user profile --> will trigger userProfile post_save
             userp.save()
+            
+            # NOTE: this field is NOT persisted in the CoG database but it is used by insertEsgfUser() below
+            userp.clearTextPassword = clearTextPassword  
+            # insert into ESGF database
+            if settings.ESGF_CONFIG:
+                esgfDatabaseManager.insertEsgfUser(userp)
 
             # create user data cart
             datacart = DataCart(user=user)
             datacart.save()
 
             # must assign URL to this user
-            urls = formset1.save(commit=False)
+            urls = formset.save(commit=False)
             for url in urls:
                 url.profile = userp
                 url.save()
@@ -248,25 +266,26 @@ def user_add(request):
                 except ValueError:
                     pass  # image does not exist, ignore
 
-            # notify user, site administrators of new registration
+            # notify user, node administrators of new registration
             notifyUserOfRegistration(user)
             notifyAdminsOfUserRegistration(user)
 
             # subscribe to mailing list ?
-            if userp.subscribed == True:
+            if userp.subscribed:
                 subscribeUserToMailingList(user, request)
 
             # redirect to login page with special message
             login_url = reverse('login')+"?message=user_add"
-            if _next is not None and len(_next.strip())>0:
-                login_url += ("&next=%s" % urllib.quote_plus(_next) )
-                # redirect to absolute URL (possibly at an another site)
+            if _next is not None and len(_next.strip()) > 0:
+                login_url += ("&next=%s" % urllib.quote_plus(_next))
+                # redirect to absolute URL (possibly at an another node)
                 if 'http' in _next:
                     url = urlparse(_next)
                     login_url = '%s://%s%s' % (url.scheme, url.netloc, login_url)
             # append openid to initial login_url
             if userp.openid() is not None:
-                login_url += "&openid=%s" % urllib.quote_plus( userp.openid() )
+                login_url += "&openid=%s" % urllib.quote_plus(userp.openid())
+            login_url += "&username=%s" % urllib.quote_plus(userp.user.username)
             
             response = HttpResponseRedirect(login_url)
             
@@ -279,11 +298,9 @@ def user_add(request):
         else:
             if not form.is_valid():
                 print "Form is invalid: %s" % form.errors
-            elif not formset1.is_valid():
-                print "URL formset is invalid: %s" % formset1.errors
-            elif not formset2.is_valid():
-                print "OpenID formset is invalid: %s" % formset2.errors
-            return render_user_form(request, form, formset1, formset2, title='Create User Profile')
+            elif not formset.is_valid():
+                print "URL formset is invalid: %s" % formset.errors
+            return render_user_form(request, form, formset, title='Create User Profile')
 
 
 # view to display user data
@@ -302,19 +319,19 @@ def user_detail(request, user_id):
         user_profile.save()
         print "Created empty profile for user=%s" % user
         
-    # retrieve map of (project, groups) for this user
-    projTuples = get_all_projects_for_user(user)
-    # ignore roles
-    _projects = [p[0] for p in projTuples]
-    # sort projects alphabetically
-    projects = sorted(_projects, key=lambda x: x.short_name)
+    # retrieve map of (project, roles) for this user
+    (projTuples, groupTuples) = get_all_shared_user_info(user)
+        
+    # sort projects, groups alphabetically
+    projects = sorted(projTuples, key=lambda x: x[0].short_name)
+    groups = sorted(groupTuples, key=lambda x: x[0])
             
     return render_to_response('cog/account/user_detail.html',
-                              {'user_profile': user_profile, 'projects': projects, 'title':'User Profile'},
+                              {'user_profile': user_profile, 'projects': projects, 'groups':groups, 'title': 'User Profile'},
                               context_instance=RequestContext(request))
 
 
-# view to redirect to the user profile on the local or remote site
+# view to redirect to the user profile on the local or remote node
 # this view is always invoked with the *local* user 'id'
 def user_profile_redirect(request, user_id):
     
@@ -334,7 +351,7 @@ def user_profile_redirect(request, user_id):
 
 
 # view to look up a *local* user by OpenID
-# this view does NOT redirect to other peer sites
+# this view does NOT redirect to other peer nodes
 # (user_profile_redirect does that)
 def user_byopenid(request):
     
@@ -345,12 +362,70 @@ def user_byopenid(request):
         # load User object
         userOpenid = get_object_or_404(UserOpenID, claimed_id=openid)
         
-        # redirect to user profile page on local site
+        # redirect to user profile page on local node
         return HttpResponseRedirect(reverse('user_detail', kwargs={'user_id': userOpenid.user.id}))
             
     else:
         return HttpResponseNotAllowed(['GET'])
     
+# view to retrieve the image of a local user, identified by openid
+# optionally, the image thumbnail can be retrieved instead
+def user_image(request):
+    
+    if request.method == 'GET':
+    
+        openid = request.GET['openid']
+        thumbnail = request.GET.get('thumbnail', False)
+        
+        # default image
+        imagePath = getattr(settings, "STATIC_URL") + DEFAULT_IMAGES['User']
+        
+        # load User object
+        try:
+            userOpenid = UserOpenID.objects.get(claimed_id=openid)
+            
+            # load user image
+            userProfile = UserProfile.objects.get(user=userOpenid.user)
+            imagePath = userProfile.image.url
+                    
+        except (ValueError, ObjectDoesNotExist) as e:
+            pass # use default image
+            
+        # return thumbnail
+        if thumbnail:
+            
+            thumbnailPath = getThumbnailPath(imagePath, mustExist=True)
+            return HttpResponseRedirect( thumbnailPath )
+        
+        # return full image
+        else:
+            return HttpResponseRedirect( imagePath )        
+
+    else:
+        return HttpResponseNotAllowed(['GET'])
+
+@user_passes_test(lambda u: u.is_staff)
+def user_delete(request, user_id):
+    
+    # get user
+    user = get_object_or_404(User, pk=user_id)
+    
+    if request.method == 'GET':
+        return render_to_response('cog/account/user_delete.html', 
+                                  {'user': user, 'title': 'Delete User'},
+                                  context_instance=RequestContext(request))
+    else:
+        
+        # delete ESGF user and all related objects
+        if settings.ESGF_CONFIG:
+            esgfDatabaseManager.deleteUser(user)
+
+        # delete CoG user and all related objects
+        user.delete()
+                
+        # redirect to user listings
+        return HttpResponseRedirect(reverse('admin_users'))
+
 
 @login_required
 def user_update(request, user_id):
@@ -364,9 +439,8 @@ def user_update(request, user_id):
     profile = get_object_or_404(UserProfile, user=user)
 
     # create URLs formset
-    UserUrlFormsetFactory = modelformset_factory(UserUrl, form=UserUrlForm, exclude=('profile',), can_delete=True,
-                                                 extra=2)
-    UserOpenidFormsetFactory = modelformset_factory(UserOpenID, form=UserOpenidForm, can_delete=True, extra=0, fields="__all__")
+    UserUrlFormsetFactory = modelformset_factory(UserUrl, form=UserUrlForm, exclude=('profile',), 
+                                                 can_delete=True, extra=2)
 
     if request.method == 'GET':
 
@@ -385,21 +459,17 @@ def user_update(request, user_id):
                                                 'type': profile.type})
 
         # retrieve existing URLs and OpenIDs associated to this user
-        formset1 = UserUrlFormsetFactory(queryset=UserUrl.objects.filter(profile=profile), prefix='url')
-        formset2 = UserOpenidFormsetFactory(queryset=UserOpenID.objects.filter(user=profile.user), prefix='openid')
+        formset = UserUrlFormsetFactory(queryset=UserUrl.objects.filter(profile=profile), prefix='url')
 
-        return render_user_form(request, form, formset1, formset2, title='Update User Profile')
+        return render_user_form(request, form, formset, title='Update User Profile')
 
     else:
         # form with bounded data
         form = UserForm(request.POST, request.FILES, instance=user)
         # formset with bounded data
-        formset1 = UserUrlFormsetFactory(request.POST, queryset=UserUrl.objects.filter(profile=profile), prefix='url')
-        # formset with bounded data
-        formset2 = UserOpenidFormsetFactory(request.POST, queryset=UserOpenID.objects.filter(user=profile.user),
-                                            prefix='openid')
+        formset = UserUrlFormsetFactory(request.POST, queryset=UserUrl.objects.filter(profile=profile), prefix='url')
 
-        if form.is_valid() and formset1.is_valid() and formset2.is_valid():
+        if form.is_valid() and formset.is_valid():
 
             # update user
             user = form.save()
@@ -407,7 +477,7 @@ def user_update(request, user_id):
             # old user profile
             user_profile = get_object_or_404(UserProfile, user=user)
             
-            # capture user profile status before t is updated
+            # capture user profile status before it is updated
             oldValidFlag = isUserValid(user)
             oldSubscribed = user_profile.subscribed
             
@@ -431,7 +501,7 @@ def user_update(request, user_id):
 
             # image management
             _generateThumbnail = False
-            if form.cleaned_data.get('delete_image') == True:
+            if form.cleaned_data.get('delete_image'):
                 deleteImageAndThumbnail(user_profile)
 
             elif form.cleaned_data['image'] is not None:
@@ -449,28 +519,29 @@ def user_update(request, user_id):
             user_profile.save()
 
             # must assign URL to this user
-            urls = formset1.save(commit=False)
+            urls = formset.save(commit=False)
             for url in urls:
                 url.profile = profile
                 url.save()
 
-            # must assign OpenIDs to this user
-            openids = formset2.save(commit=False)
-            for openid in openids:
-                openid.user = profile.user
-                openid.save()
+            for obj in formset.deleted_objects:
+                obj.delete()
 
             # generate thumbnail - after picture has been saved
             if _generateThumbnail:
                 generateThumbnail(user_profile.image.path, THUMBNAIL_SIZE_SMALL)
 
             # subscribe/unsubscribe user if mailing list selection changed
-            if oldSubscribed == True and form.cleaned_data['subscribed'] == False:
-                if oldValidFlag: # send email only for non-new users
+            if oldSubscribed and form.cleaned_data['subscribed'] == False:
+                if oldValidFlag:  # send email only for non-new users
                     unSubscribeUserToMailingList(user, request)
                     
-            elif oldSubscribed == False and form.cleaned_data['subscribed'] == True:
+            elif oldSubscribed == False and form.cleaned_data['subscribed']:
                 subscribeUserToMailingList(user, request)
+
+            # update ESGF user object in ESGF database
+            if settings.ESGF_CONFIG:
+                esgfDatabaseManager.updateUser(user_profile)
 
             # redirect user profile page
             response = HttpResponseRedirect(reverse('user_detail', kwargs={'user_id': user.id}))
@@ -483,36 +554,36 @@ def user_update(request, user_id):
         else:
             if not form.is_valid():
                 print "Form is invalid: %s" % form.errors
-            elif not formset1.is_valid():
-                print "URL formset is invalid: %s" % formset1.errors
-            elif not formset2.is_valid():
-                print "OpenID formset is invalid: %s" % formset2.errors
-
-            return render_user_form(request, form, formset1, formset2, title='Update User Profile')
+            elif not formset.is_valid():
+                print "URL formset is invalid: %s" % formset.errors
+                
+            return render_user_form(request, form, formset, title='Update User Profile')
 
 
 @login_required
 def password_update(request, user_id):
-    '''View used by the user (or by a site administrator) to change their password.'''
+    """
+    View used by the user (or by a node administrator) to change their password.
+    """
 
-    # redirect to another site if necessary
+    # redirect to another node if necessary
     if redirectToIdp():
         return HttpResponseRedirect(settings.IDP_REDIRECT + request.path)
 
-    # check permission: user that owns the account, or a site administrator
+    # check permission: user that owns the account, or a node administrator
     user = get_object_or_404(User, id=user_id)
-    if user!=request.user and not request.user.is_staff:
+    if user != request.user and not request.user.is_staff:
         return HttpResponseServerError("You don't have permission to change the password for this user.")
 
-    # check use has OpenID issued by this site
+    # check use has OpenID issued by this node
     if user.profile.localOpenid() is None:
-        return HttpResponseForbidden("Non local user: password must be changed at site that issued the OpenID.")
+        return HttpResponseForbidden("Non local user: password must be changed at the node that issued the OpenID.")
 
     if request.method == 'GET':
                 
         # create form (pre-fill username)
         initial = {'username': user.username,            # the target user
-                   'requestor': request.user.username }  # the user requesting the change
+                   'requestor': request.user.username}  # the user requesting the change
         form = PasswordChangeForm(initial=initial)
         return render_password_change_form(request, form, user.username)
 
@@ -534,7 +605,7 @@ def password_update(request, user_id):
                 esgfDatabaseManager.updatePassword(user, form.cleaned_data.get('password'))
             
             # standard user: logout
-            if user==request.user:
+            if user == request.user:
                 logout(request)
                         
                 # redirect to login page with special message
@@ -546,8 +617,8 @@ def password_update(request, user_id):
             
             # administrator: back to user profile
             else:
-                return HttpResponseRedirect(reverse('user_detail', kwargs={'user_id':user.id})+"?message=password_updated_by_admin")
-                
+                return HttpResponseRedirect(reverse('user_detail',
+                                                    kwargs={'user_id': user.id})+"?message=password_updated_by_admin")
 
         else:
             print "Form is invalid: %s" % form.errors
@@ -556,7 +627,7 @@ def password_update(request, user_id):
 
 def user_reminder(request):
     
-    # redirect to another site if necessary
+    # redirect to another node if necessary
     if redirectToIdp():
         return HttpResponseRedirect(settings.IDP_REDIRECT + request.path)
 
@@ -579,19 +650,19 @@ def user_reminder(request):
                 subject = "Username/OpenID Reminder"
                 message = ""
                 for user in users:
-                    message += "Your username is: %s\n" % user.username
+                    message += "\nYour username is: %s\n" % user.username
 
                     for openid in user.profile.openids():
                         message += "Your OpenID is: %s\n" % openid
 
-                notify(user, subject, message)
+                sendEmail(email, subject, message)
 
                 # redirect to login page with special message
                 return HttpResponseRedirect(reverse('login')+"?message=user_reminder")
 
             # user not found
             else:
-                return render_user_reminder_form(request, form, "This email address cannot be found")
+                return render_user_reminder_form(request, form, "This email address cannot be found.")
 
         else:
             print "Form is invalid: %s" % form.errors
@@ -600,15 +671,15 @@ def user_reminder(request):
 
 def password_reset(request):
     
-    # redirect to another site if necessary
+    # redirect to another node if necessary
     if redirectToIdp():
         return HttpResponseRedirect(settings.IDP_REDIRECT + request.path)
     
     if request.method == 'GET':
         
         # optional GET parameters to pre-populate the form
-        initial = { 'openid': request.GET.get('openid',''),
-                    'email': request.GET.get('email','') }
+        initial = {'openid': request.GET.get('openid', ''),
+                   'email': request.GET.get('email', '')}
         
         form = PasswordResetForm(initial=initial)       
         return render_password_reset_form(request, form)
@@ -621,20 +692,19 @@ def password_reset(request):
             print "Form is invalid: %s" % form.errors
             return render_password_reset_form(request, form)
 
-
         openid = form.cleaned_data.get('openid')
         email = form.cleaned_data.get('email')
         
         # the openid entered by the user MUST be found in the local database
-        # otherwise we can neither change the password, nor we can redirect to a known site
+        # otherwise we can neither change the password, nor we can redirect to a known node
         try:
             userOpenid = UserOpenID.objects.get(claimed_id=openid)
             user = userOpenid.user
             
-            # 1) local user (i.e. user home site == this site)
+            # 1) local user (i.e. user home node == this node)
             if isUserLocal(user):
             
-                # 1a) this site issued this openid
+                # 1a) this node issued this openid
                 if isOpenidLocal(openid):
     
                     if user.email == email:
@@ -676,26 +746,28 @@ def password_reset(request):
                     else:
                         return render_password_reset_form(request, form, "Invalid OpenID/email combination")
 
-                # 1b) user used an external ESGF openid (for example, http://dkrz...) to login onto this site (for example, http://www.earthsystemcog.org/...)
+                # 1b) user used an external ESGF openid (for example, http://dkrz...) to login onto this node
+                # (for example, http://www.earthsystemcog.org/...)
                 else:
                     idpurl = urlparse(openid)
                     idpurl = "%s://%s/" % (idpurl.scheme, idpurl.netloc)
-                    message =  "This OpenID was issued by another site."
-                    message += "<br/>Please reset your password at <a href='%s'>that site</a>." % idpurl
+                    message = "This OpenID was issued by another node."
+                    message += "<br/>Please reset your password at <a href='%s'>that node</a>." % idpurl
                     return render_password_reset_form(request, form, message)
                 
-            #  2) non-local user: redirect request to peer CoG site, post automatically
+            #  2) non-local user: redirect request to peer node, post automatically
             else:
                 site = user.profile.site
-                redirect_url = 'http://%s%s?openid=%s&email=%s' % (site.domain, reverse('password_reset'), openid, email)
+                redirect_url = 'http://%s%s?openid=%s&email=%s' % (site.domain, reverse('password_reset'),
+                                                                   openid, email)
                 
-                # 2a) automatically redirect to peer site
-                #redirect_url += "&post=true" # submit form automatically at that site
+                # 2a) automatically redirect to peer node
+                #redirect_url += "&post=true" # submit form automatically at that node
                 #return HttpResponseRedirect(redirect_url)
                 
-                # 2b) show message on this site with link to peer site
-                message  = "This OpenID was issued by another CoG site."
-                message += "<br/>Please use the <a href='%s'>Reset Password</a> page at that site." % redirect_url
+                # 2b) show message on this node with link to peer node
+                message = "This OpenID was issued by another ESG-CoG node."
+                message += "<br/>Please use the <a href='%s'>Reset Password</a> page at that node." % redirect_url
                 return render_password_reset_form(request, form, message)
                 
         # openid not found
@@ -703,13 +775,13 @@ def password_reset(request):
             message = "OpenID not found."
             message += "<br/>If your OpenID was issued by '%s'," % settings.ESGF_HOSTNAME
             message += "<br/>then please use the 'Forgot OpenID?' link below to retrieve the correct OpenID." 
-            message += "<br/>Otherwise, please reset your password on the site that issued your OpenID."
+            message += "<br/>Otherwise, please reset your password on the ESGF-CoG node that issued your OpenID."
             return render_password_reset_form(request, form, message)
 
 
-def render_user_form(request, form, formset1, formset2, title=''):
+def render_user_form(request, form, formset, title=''):
     return render_to_response('cog/account/user_form.html',
-                              {'form': form, 'formset1': formset1, 'formset2': formset2, 'mytitle': title},
+                              {'form': form, 'formset': formset, 'mytitle': title},
                               context_instance=RequestContext(request))
 
 
@@ -733,5 +805,5 @@ def render_user_reminder_form(request, form, message=""):
 
 def render_site_change_form(request, form):
     return render_to_response('cog/account/site_change.html',
-                              {'form': form, 'mytitle' : 'Change User Home Site' },
+                              {'form': form, 'mytitle' : 'Change User Home Node' },
                               context_instance=RequestContext(request))

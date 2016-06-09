@@ -12,8 +12,9 @@ from cog.site_manager import siteManager
 import datetime
 from constants import GLOBUS_NOT_ENABLED_MESSAGE
 from functools import wraps
-from cog.plugins.esgf.idp_whitelist import LocalEndpointDict
+from cog.plugins.esgf.registry import LocalEndpointDict
 import os
+from cog.views.utils import getQueryDict
 
 # download parameters
 DOWNLOAD_METHOD_WEB = 'web'
@@ -37,11 +38,11 @@ if siteManager.isGlobusEnabled():
 	from getpass import getpass
 	from cog.plugins.globus.transfer import submiTransfer, get_access_token, generateGlobusDownloadScript
 	endpoints_filepath = siteManager.get('ENDPOINTS', section=SECTION_GLOBUS)
-	GLOBUS_ENDPOINTS= LocalEndpointDict('/esg/config/esgf_endpoints.xml')
+	GLOBUS_ENDPOINTS= LocalEndpointDict(endpoints_filepath)
 
 def requires_globus(view_func):
 	'''
-	Custom decorator that prevents a view to be invoked unless this site
+	Custom decorator that prevents a view to be invoked unless this node
 	is configured with a [Globus] section in cog_settings.py.
 	'''
 	
@@ -67,9 +68,9 @@ def download(request):
 	'''
 		
 	# retrieve request parameters
-	datasets = request.REQUEST.get('dataset','').split(",")
+	datasets = getQueryDict(request).get('dataset','').split(",")
 	# optional query filter
-	query = request.REQUEST.get('query',None)
+	query = getQueryDict(request).get('query',None)
 	# maximum number of files to query for, if specified
 	limit = request.GET.get('limit', DOWNLOAD_LIMIT)
 	
@@ -82,10 +83,19 @@ def download(request):
 		# query each index_node for all files belonging to that dataset
 		(dataset_id, index_node) = str(dataset).split('@')
 		
-		params = [ ('type',"File"), ('dataset_id',dataset_id), ("distrib", "false"),
+		params = [ ('type',"File"), ('dataset_id',dataset_id),
 				   ('offset','0'), ('limit',limit), ('fields','url'), ("format", "application/solr+json") ]
+		
 		if query is not None and len(query.strip())>0:
 			params.append( ('query', query) )
+			
+		# optional shard
+		shard = request.GET.get('shard', '')
+		if shard is not None and len(shard.strip()) > 0:
+			params.append(('shards', shard+"/solr"))  # '&shards=localhost:8982/solr'
+		else:
+			params.append(("distrib", "false"))
+
 			
 		url = "http://"+index_node+"/esg-search/search?"+urllib.urlencode(params)
 		print 'Searching for files at URL: %s' % url
@@ -165,13 +175,13 @@ def oauth(request):
 	# retrieve destination parameters from Globus redirect
 	# example URL with added parameters from Globus redirect: 
 	# /globus/oauth/?label=&verify_checksum=on&submitForm=&folder[0]=tmp&endpoint=cinquiniluca#mymac&path=/~/&ep=GC&lock=ep&method=get&folderlimit=1&action=http://localhost:8000/globus/oauth/
-	request.session[TARGET_ENDPOINT] = request.REQUEST.get('endpoint','#')
-	request.session[TARGET_FOLDER] = request.REQUEST.get('path','/~/') + request.REQUEST.get('folder[0]','/~/')  # default value: user home directory
-	print 'User selected destionation endpoint:%s, path:%s, folder:%s' % (request.session[TARGET_ENDPOINT], request.REQUEST.get('path','/~/'), request.session[TARGET_FOLDER])
+	request.session[TARGET_ENDPOINT] = getQueryDict(request).get('endpoint','#')
+	request.session[TARGET_FOLDER] = getQueryDict(request).get('path','/~/') + getQueryDict(request).get('folder[0]','/~/')  # default value: user home directory
+	print 'User selected destionation endpoint:%s, path:%s, folder:%s' % (request.session[TARGET_ENDPOINT], getQueryDict(request).get('path','/~/'), request.session[TARGET_FOLDER])
 	
 	params = [ ('response_type','code'),
 		       ('client_id', siteManager.get('PORTAL_GO_USERNAME', section=SECTION_GLOBUS)),
-		       ('redirect_uri', request.build_absolute_uri(reverse("globus_token")) ),]
+		       ('redirect_uri', request.build_absolute_uri(reverse("globus_token")).replace('http:','https:') ),] # MUST force 'https' protocol
 	
 	globus_url = GLOBUS_OAUTH_URL + "?" + urllib.urlencode(params)
 	# FIXME: fake the Globus URL

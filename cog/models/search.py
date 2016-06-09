@@ -2,7 +2,7 @@ from django.db import models
 import ConfigParser
 import os
 
-INVALID_CHARACTERS = ['>','<','&','$','!','\\','\/','\'','\"']
+INVALID_CHARACTERS = ['>','<','&','$','!','\\','\/','\'','\"','(',')','[',']','{','}']
 
 # maximum number of results per page
 LIMIT = 10
@@ -56,6 +56,12 @@ class SearchInput:
         
     def setConstraint(self, name, values):
         self.constraints[name] = values
+        
+    def hasConstraint(self, name):
+        return name in self.constraints
+    
+    def getConstraint(self, name):
+        return self.constraints.get(name, None)
         
     def isValid(self):
         for c in INVALID_CHARACTERS:

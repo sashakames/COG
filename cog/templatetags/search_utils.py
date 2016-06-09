@@ -45,6 +45,7 @@ def displayMetadataKey(key):
     #return (key != 'score' and key != 'index_node' and key != 'data_node' \
     #        and key != 'dataset_id' and key != 'replica' and key!= 'latest')
     return (key != 'score' and key != 'description' and key != 'title' \
+            and key != 'version' and key != '_version_' \
             and key != 'url' and key != 'type' and key!= 'replica' and key != 'latest')
 
  
@@ -89,12 +90,12 @@ def recordUrls(record):
             urls.append(value)
         
     # add special WGET endpoint
-    urls.append( ("javascript:wgetScript('%s','%s')" % (record.fields['index_node'][0], record.id) , 
+    urls.append( ("javascript:wgetScript('%s','%s','%s')" % (record.fields['index_node'][0], record.fields.get('shard', [''])[0], record.id) , 
                   "application/wget", 
                   "WGET Script") )
     
     # add GridFTP endpoint
-    if siteManager.isGlobusEnabled(): # only if this site has been registered with Globus
+    if siteManager.isGlobusEnabled():  # only if this node has been registered with Globus
         if 'access' in record.fields and 'index_node' in record.fields and 'data_node' in record.fields:
             index_node = record.fields['index_node'][0]
             data_node = record.fields['data_node'][0]
@@ -102,9 +103,31 @@ def recordUrls(record):
                 if value.lower() == 'gridftp':
                     # data_node must appear in list of valid Globus endpoints (example: "esg-datanode.jpl.nasa.gov:2811")
                     for gridftp_url in GLOBUS_ENDPOINTS.endpointDict().keys():
+                    	gurl = '/globus/download?dataset=%s@%s' %(record.id, index_node)
+                    	if record.fields.get('shard', None):
+                    		gurl += "&shard="+record.fields.get('shard')[0]
                         if data_node in gridftp_url:
-                            urls.append( ('/globus/download?dataset=%s@%s' %(record.id, index_node),
+                            urls.append( (gurl,
                                           'application/gridftp', # must match: var GRIDFTP = 'application/gridftp'
                                           'GridFTP') )
             
     return sorted(urls, key = lambda url: url_order(url[1]))
+
+@register.filter
+def showSearchConfigMessage(message, project):
+    
+    if message == "search_config_exported":
+        return "The project search configuration has been exported to: " + _getProjectSearchConfigFilePath(project)
+    
+    elif message == "search_config_imported":
+        return "The project search configuration has been imported from: " + _getProjectSearchConfigFilePath(project)
+    
+    elif message == "search_config_not_found":
+        return "The project search configuration could not be imported from: " + _getProjectSearchConfigFilePath(project)
+
+    else:
+        raise Exception("Invalid Message")
+
+def _getProjectSearchConfigFilePath(project):
+    
+    return "$MEDIA_ROOT/config/%s/search.cfg" % project.short_name.lower()

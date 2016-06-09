@@ -20,7 +20,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ObjectDoesNotExist
 import urlparse
 import string
-from cog.views.utils import getKnownIdentityProviders
+from cog.views.utils import getKnownIdentityProviders, getQueryDict, paginate
 
 register = template.Library()
 
@@ -42,6 +42,9 @@ def sortdict(the_dict):
         tuples.append((key, value))
     return sorted(tuples, key=lambda tuple: tuple[0])
 
+@register.filter
+def sortlist(the_list):
+    return sorted(the_list)
 
 @register.filter
 def dictKeyLookup(the_dict, key):
@@ -330,7 +333,8 @@ def relatedPostSorted(post, related_posts):
 
 @register.filter
 def numberOptions(lastNumber, selectedNumber):
-    lastNumberPlusOne = int(lastNumber)
+    '''Builds number options for select widget: 1-lastNumber.'''
+
     selectedNumber = int(selectedNumber)
     html = ""
     for n in range(1, lastNumber + 1):
@@ -341,6 +345,19 @@ def numberOptions(lastNumber, selectedNumber):
     # mark the result as safe from further escaping
     return mark_safe(html)
 
+@register.filter
+def numberOptionsZeroBased(lastNumber, selectedNumber):
+    '''Builds number options for select widget: 0-lastNumber.'''
+    
+    selectedNumber = int(selectedNumber)
+    html = ""
+    for n in range(0, lastNumber + 1):
+        html += "<option value='%d'" % n
+        if n == selectedNumber:
+            html += "selected='selected'"
+        html += ">%d</option>" % n
+    # mark the result as safe from further escaping
+    return mark_safe(html)
 
 def getTopTabUrl(project, request):
     """
@@ -606,11 +623,18 @@ def getThumbnailById(id, type):
 @register.filter
 def getThumbnail(user):
 
+    # try returning image URL at user home node
+    if isinstance(user, User):
+        openid = user.profile.openid()
+        if openid is not None:
+            url = 'http://%s%s?openid=%s&thumbnail=true' % (user.profile.site.domain, 
+                                                            reverse('user_image'), openid)
+            return url
+        
+    # default: return image path on local system
     imagePath = getImage(user)
-    thumbnailPath = getThumbnailPath(imagePath)
-    print thumbnailPath
+    thumbnailPath = getThumbnailPath(imagePath, mustExist=True)
     return thumbnailPath
-
 
 @register.filter
 def doc_redirect(doc):
@@ -657,7 +681,7 @@ def list_project_tags(project):
 
 @register.filter
 def projectNews(project):
-    return news(project)
+    return project_news(project)
 
 
 @register.filter
@@ -708,7 +732,7 @@ def showMessage(message):
 
     elif message == "password_expired":
         return "Your password has expired. Please choose a new password conforming to the requirements below."
-
+    
     else:
         raise Exception("Invalid message")
 
@@ -770,8 +794,9 @@ def get_openid(request):
     or the request cookies.
     """
     
-    if request.REQUEST.get('openid', None):
-        return request.REQUEST['openid']
+    queryDict = getQueryDict(request)
+    if queryDict.get('openid', None):
+        return queryDict['openid']
     elif request.COOKIES.get('openid', None):
         return request.COOKIES['openid']
     else:
@@ -791,8 +816,27 @@ def delete_from_session(session, key):
 @register.filter
 def get_peer_sites(project):
     """
-    Returns a list of ENABLED peer sites, ordered alphabetically by name.
+    Returns a list of ENABLED peer nodes, ordered alphabetically by name.
     """
     
-    print 'SITES=%s' % getPeerSites()
     return getPeerSites()
+
+@register.filter
+def paginate_filter(objects, request):
+    
+    # must use max_counts_per_page=MAX_COUNTS_PER_PAGE since a filter accepts at most 2 parameters
+    return paginate(objects, request)
+
+@register.filter
+def pagination_url(request, page_number):
+    '''Constructs the previous/next URL for a paginated page including all GET request parameters.'''
+    
+    # copy all current request parameters
+    params = request.GET.copy()
+    
+    # replace/add 'page' parameter
+    params['page'] = page_number
+    
+    # build full URL
+    return '%s?%s' %  (request.path, params.urlencode())
+        

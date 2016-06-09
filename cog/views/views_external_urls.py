@@ -44,10 +44,12 @@ def external_urls_display(request, project_short_name, suburl):
     
     # build list of peers with with external urls of this type
     peers = _subSelectProjects(project.peers.all(), externalUrlConf, request.user)
-             
-    return render_to_response('cog/common/rollup.html', 
+
+    # to change to tabbed rollups, load 'cog/common/rollup_tabbed.html'
+    return render_to_response('cog/common/rollup_accordion.html',
                               {'project': project, 
-                               'title': '%s %s' % (project.short_name, template_title), 
+                               'title': '%s %s' % (project.short_name, template_title),
+                               # 'title': template_title,
                                'template_page': 'cog/project/_external_urls_list.html', 
                                'template_title': template_title, 
                                'template_form_pages': template_form_pages,
@@ -118,7 +120,7 @@ def external_urls_update(request, project_short_name, suburl):
         # sorting of the main view occurs in project.py
         if type == 'release_schedule':
             formset = ExternalUrlFormSet(queryset=ExternalUrl.objects.filter(project=project, type=type).
-                                        order_by('-title'))
+                                         order_by('-title'))
         else:
 
             # external_urls are ordered by title when editing to match the order when just viewing.
@@ -129,12 +131,15 @@ def external_urls_update(request, project_short_name, suburl):
     
     # POST
     else:
-
         formset = ExternalUrlFormSet(request.POST)
 
         if formset.is_valid():
             # select instances that have changed, don't save to database yet
             instances = formset.save(commit=False)
+            # must manually delete the instances marked for deletion
+            for obj in formset.deleted_objects:
+                obj.delete()
+            # for all others, assign the project reference and persist changes
             for instance in instances:
                 instance.project = project
                 instance.type = type
