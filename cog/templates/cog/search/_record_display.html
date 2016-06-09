@@ -3,6 +3,7 @@
 {% load cog_utils %}
 {% load search_utils %}
 
+
 <!-- Record core fields -->
 <div id="record_{{record.id}}">
 	<strong>{{record.fields.title.0}}</strong>
@@ -18,7 +19,9 @@
 
 <!-- Dataset files -->
 &nbsp; [ <strong><a href="" onclick="javascript:openclose('files_{{ record.id }}', this, 'Show Files', 'Hide Files');
+
                          javascript:showFiles('{{record.id}}','{{record.fields.index_node.0}}', '{{record.fields.shard.0}}',
+
                         		              '0', '{{ project.short_name.lower }}');
                          return false">Show Files</a></strong> ]
 
@@ -33,7 +36,7 @@
 {% for url in record|recordUrls %}
 
 	<!-- add this service to the catalog -->
-	<script language="javascript">services.add( new Service('{{record.id}}','{{url.0}}', '{{url.1}}','{{url.2}}','{{record.fields.index_node.0}}') );</script>
+	<script language="javascript">services.add( new Service('{{record.id}}','{{url.0}}', '{{url.1}}','{{url.2}}','{{record.fields.index_node.0 }}') );</script>
 
 	<!-- THREDDS -->
 	{% if url.1 == 'application/html+thredds' %}
@@ -41,11 +44,13 @@
 
 	<!-- LAS -->
 	{% elif url.1 == 'application/las' %}
-	    &nbsp; [ <a href="{{url.0}}" target="_blank"><strong>LAS Visualization</strong></a> ]
+	  <!--  &nbsp; [ <a href="{{url.0}}" target="_blank"><strong>LAS Visualization</strong></a> ] -->
 
 	<!-- WGET -->
 	{% elif url.1 == 'application/wget' %}
+
 		&nbsp; [ <a href="javascript:wgetScript('{{ record.fields.index_node.0}}','{{ record.fields.shard.0 }}','{{ record.id }}')"><strong>WGET Script</strong></a> ]
+
 		
 	<!-- Globus -->
 	{% elif url.1 == 'application/gridftp' %}
