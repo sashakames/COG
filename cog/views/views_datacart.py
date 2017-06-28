@@ -238,11 +238,11 @@ def datacart_wget(request, site_id, user_id):
     {
         u'esgf-node.jpl.nasa.gov|localhost:8982': [u'CMAC.NASA-GSFC.AIRS.mon.v1|esg-datanode.jpl.nasa.gov'], 
         u'esgf-node.jpl.nasa.gov': [u'obs4MIPs.NASA-JPL.QuikSCAT.mon.v1|esgf-node.jpl.nasa.gov'],
-        u'pcmdi9.llnl.gov':
+        u'esgf-node9.llnl.gov':
             [
-              u'cmip5.output1.INM.inmcm4.1pctCO2.day.atmos.day.r1i1p1.v20110323|pcmdi9.llnl.gov',
-              u'cmip5.output1.INM.inmcm4.esmHistorical.fx.atmos.fx.r0i0p0.v20110927|pcmdi9.llnl.gov',
-              u'cmip5.output1.INM.inmcm4.1pctCO2.day.ocean.day.r1i1p1.v20110323|pcmdi9.llnl.gov'
+              u'cmip5.output1.INM.inmcm4.1pctCO2.day.atmos.day.r1i1p1.v20110323|esgf-node9.llnl.gov',
+              u'cmip5.output1.INM.inmcm4.esmHistorical.fx.atmos.fx.r0i0p0.v20110927|esgf-node9.llnl.gov',
+              u'cmip5.output1.INM.inmcm4.1pctCO2.day.ocean.day.r1i1p1.v20110323|esgf-node9.llnl.gov'
            ]
     }
     '''
