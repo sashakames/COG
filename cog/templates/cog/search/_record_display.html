@@ -57,8 +57,6 @@
 		    &nbsp; [ <a href="{{url.0}}" target="_blank"><strong>THREDDS Catalog</strong></a> ]
 	
 		<!-- LAS -->
-		{% elif url.1 == 'application/las' %}
-		    &nbsp; [ <a href="{{url.0}}" target="_blank"><strong>LAS Visualization</strong></a> ]
 	
 		<!-- WGET -->
 		{% elif url.1 == 'application/wget' %}
@@ -69,7 +67,7 @@
 			&nbsp; [ <a href="javascript:goDataset('{{ url.0 }}')"><strong>Globus Download</strong></a> ]
 	
 		<!--  all other services -->
-		{% else %}
+		{% elif url.2 != 'LAS' %}
 			&nbsp; [ <a href="{{url.0}}"><strong>{{ url.2 }}</strong></a> ]
 	
 	    {% endif %}

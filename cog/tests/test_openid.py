@@ -9,7 +9,7 @@ import unittest
 import urllib2
 
 # list of openids from different ESGF IdPs
-OPENIDS = ['https://pcmdi9.llnl.gov/esgf-idp/openid/lucacinquini',
+OPENIDS = ['https://esgf-node9.llnl.gov/esgf-idp/openid/lucacinquini',
            'https://esgf-node.ipsl.fr/esgf-idp/openid/luca4test',
            'https://esg-datanode.jpl.nasa.gov/esgf-idp/openid/lucacinquini',
            'https://hydra.fsl.noaa.gov/esgf-idp/openid/lucacinquini',
