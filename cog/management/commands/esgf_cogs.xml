@@ -13,6 +13,6 @@
         <site name="ESGF@NASA/JPL" domain="esgf-node.jpl.nasa.gov" />
 
         <!-- DOE/LLNL production server -->
-        <site name="ESGF@DOE/LLNL" domain="pcmdi9.llnl.gov" />
+        <site name="ESGF@DOE/LLNL" domain="esgf-node9.llnl.gov" />
 
 </sites>
