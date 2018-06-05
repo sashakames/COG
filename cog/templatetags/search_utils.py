@@ -3,8 +3,8 @@ from cog.models.search import searchMappings
 from cog.site_manager import siteManager
 from string import replace
 import json
-if siteManager.isGlobusEnabled():    
-    from cog.views.views_globus import GLOBUS_ENDPOINTS
+from collections import OrderedDict
+from django.conf import settings
 
 register = template.Library()
 
@@ -64,7 +64,7 @@ def getFacetOptionLabel(facet_key, facet_value):
     """Return the label to be displayed for a given (facet key, facet value) combination, 
        or the facet_value itself if a mapping is not found."""
     label = searchMappings.getFacetOptionLabel(facet_key, facet_value)
-    return label.replace("_"," ")
+    return label.replace("_"," ")        
 
 @register.filter 
 def displayMetadataKey(key):
@@ -72,15 +72,15 @@ def displayMetadataKey(key):
     #return (key != 'score' and key != 'index_node' and key != 'data_node' \
     #        and key != 'dataset_id' and key != 'replica' and key!= 'latest')
     return (key != 'score' and key != 'description' and key != 'title' \
-            and key != 'version' and key != '_version_' \
+            and key != 'version' and key != '_version_' and key != 'further_info_url' \
             and key != 'url' and key != 'type' and key!= 'replica' and key != 'latest')
-
  
 @register.filter    
 def formatMetadataKey(key):
     '''Utility method to format a metadata key before display.'''
-    key = key.capitalize()
-    return replace(key,'_',' ').title()
+    #key = key.capitalize()
+    #return replace(key,'_',' ').title()
+    return key
 
 @register.filter 
 def toJson(record):
@@ -121,37 +121,62 @@ def recordUrls(record):
                   "application/wget", 
                   "WGET Script") )
     
-    # add GridFTP endpoint
+    # add Globus endpoints
     if siteManager.isGlobusEnabled():  # only if this node has been registered with Globus
         if 'access' in record.fields and 'index_node' in record.fields and 'data_node' in record.fields:
             index_node = record.fields['index_node'][0]
             data_node = record.fields['data_node'][0]
             
-            # try adding "Globus" access first
-            globusAccess = False
             for value in record.fields['access']:
             	if value.lower() == 'globus':
                 	gurl = '/globus/download?dataset=%s@%s' %(record.id, index_node)
                 	if record.fields.get('shard', None):
                 		gurl += "&shard="+record.fields.get('shard')[0]
                 	urls.append( (gurl, 'application/gridftp', 'GridFTP') )
-                	globusAccess = True
-                	
-            # if not found, try to add GridFTP access
-            if not globusAccess:
-	            for value in record.fields['access']:
-					if value.lower() == 'gridftp':
-						# data_node must appear in list of valid Globus endpoints (example: "esg-datanode.jpl.nasa.gov:2811")
-						for gridftp_url in GLOBUS_ENDPOINTS.endpointDict().keys():
-							gurl = '/globus/download?dataset=%s@%s' %(record.id, index_node)
-							if record.fields.get('shard', None):
-								gurl += "&shard="+record.fields.get('shard')[0]
-							if data_node in gridftp_url:
-								urls.append( (gurl,
-											  'application/gridftp', # must match: var GRIDFTP = 'application/gridftp'
-											  'GridFTP') )
-            
+                	            
     return sorted(urls, key = lambda url: url_order(url[1]))
+
+@register.filter
+def qcflags(record):
+    '''
+    Parses the record QC flags metadata into a dictionary indexed by the QC flag type.
+    Input:
+     "quality_control_flags": [
+          "obs4mips_indicators:1:yellow",
+          "obs4mips_indicators:2:red"
+        ],
+    Output:
+        {'obs4mips_indicators': OrderedDict([(1, 'yellow'), (2, 'red')])}
+    '''
+    
+    qcflags = {}
+    if record.fields.get('quality_control_flags', None):
+        for qcflag in record.fields['quality_control_flags']:
+            # break up the list item into different parts
+            # qcflag="obs4mips_indicators:1:yellow"
+            (qcflag_name, qcflag_order, qcflag_value) = qcflag.split(':')
+            try:
+                qcflags[qcflag_name]
+            except KeyError:
+                qcflags[qcflag_name] = {}
+            qcflags[qcflag_name][int(qcflag_order)] = qcflag_value
+    # for each qcflag, sort dictionary of values by their key (i.e. by the QC flag value order)
+    for key in qcflags:
+        qcflags[key] = OrderedDict(sorted(qcflags[key].items(), key=lambda t: t[0]))
+            
+    # note: to enable easy access in html template, return the sorted set of (key, value) pairs
+    # where the value is itself an ordered dictionary
+    return sorted( qcflags.items() )
+
+@register.filter
+def qcflag_url(qcflag_name):
+    """
+    Returns the reference URL for a given quality control flag
+    :param key:
+    :return:
+    """
+    qcflag_urls = getattr(settings,'QCFLAGS_URLS', {})
+    return qcflag_urls.get(qcflag_name, '') # return empty link by default
 
 @register.filter
 def sortResults(results, fieldName):

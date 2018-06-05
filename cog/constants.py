@@ -6,6 +6,7 @@ SECTION_DEFAULT = 'DEFAULT'
 SECTION_ESGF = 'ESGF'
 SECTION_EMAIL = 'EMAIL'
 SECTION_GLOBUS = 'GLOBUS'
+SECTION_PID = 'PID'
 
 # note: use lower case
 VALID_MIME_TYPES = { '.bmp':  ['image/bmp', 'image/x-windows-bmp'],
@@ -13,6 +14,7 @@ VALID_MIME_TYPES = { '.bmp':  ['image/bmp', 'image/x-windows-bmp'],
                      '.doc':  ['application/msword'],
                      '.docx': ['application/msword','application/zip'],
                      '.gif':  ['image/gif'],
+                     '.ipynb': ['application/x-ipynb+json','application/json','text/plain'],
                      '.jpg':  ['image/jpeg','image/pjpeg'],
                      '.jpeg': ['image/jpeg', 'image/pjpeg' ],
                      '.pdf':  ['application/pdf'],
@@ -31,4 +33,3 @@ IDP_WHITELIST_FILENAME = "esgf_idp.xml"
 IDP_WHITELIST_STATIC_FILENAME = "esgf_idp_static.xml"
 KNOWN_PROVIDERS_FILENAME = "esgf_known_providers.xml"
 PEER_NODES_FILENAME = "esgf_cogs.xml"
-ENDPOINTS_FILENAME = "esgf_endpoints.xml"

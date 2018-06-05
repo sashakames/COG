@@ -11,6 +11,13 @@
 	{% include 'cog/datacart/_wget_js.html' %}
 	{% include 'cog/datacart/_las_js.html' %}
 	{% include 'cog/datacart/_go_js.html' %}
+	{% include 'cog/datacart/_citation_js.html' %}
+	{% if 'PID_CONFIG'|settings_value %}
+		{% include 'cog/datacart/_pid_js.html' %}
+	{% endif %}
+        {% if 'WPS_ENDPOINT'|settings_value %}
+          {% include 'cog/datacart/_wps_js.html' %}
+        {% endif %}
 
 	<!-- custom spacing of datacart table -->
 	<style scoped type="text/css">
@@ -106,13 +113,22 @@
 	      			     &nbsp;
 	      			     [ <strong><a href="" onclick="javascript:goDatasets(); return false">Globus
 						 Download</a></strong> ]
-				     </td>
+						{% if 'PID_CONFIG'|settings_value %}
+							&nbsp;
+						    [ <strong><a href="" onclick="javascript:dataCartPid('datacart-pid', this, 'Collection PID',
+							'Hide Collection PID'); return false">Collection PID</a></strong> ]
+						{% endif %}
+                                                {% if 'WPS_ENDPOINT'|settings_value and 'WPS_DATACART'|settings_value %}
+                                                        &nbsp;
+                                                        [ <strong><a href="" onclick="javascript:wpsDatasets('{{'WPS_ENDPOINT'|settings_value}}'); return false">Compute</a></strong> ]
+                                                {% endif %}
+					 </td>
 			    </tr>
 			    <!--this row must be set explicitly to white since the td, which is white does not fill up the entire
 			     row, which is gray -->
 			    <tr style="background-color: white;">
 			         <td style="width:72%;vertical-align:middle;">
-			              When 'Show Files' is clicked, or when using WGET or Globus,
+			              When 'List Files' is clicked, or when using WGET or Globus,
 				          you may use an optional string to
 				          sub-select the filenames:
 			         </td>
@@ -135,6 +151,10 @@
 			        <td colspan="4" >
 			            <!-- wget scripts place-holder  -->
 			            <div style="width:500px;display:none;margin-left:auto;margin-right:auto;" class="padded-box" id="wget-scripts"></div>
+						<!-- datacart pid place-holder  -->
+						{% if 'PID_CONFIG'|settings_value %}
+							<div style="width:500px;display:none;margin-left:auto;margin-right:auto;" class="padded-box" id="datacart-pid"></div>
+						{% endif %}
 			        </td>
 			    </tr>
 			    <tr id="item_{{ item.identifier }}_hr">

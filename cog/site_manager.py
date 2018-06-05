@@ -1,8 +1,9 @@
 import os
+import time
 import ConfigParser
 import logging
 
-from cog.constants import (SECTION_ESGF, SECTION_GLOBUS)
+from cog.constants import (SECTION_ESGF, SECTION_GLOBUS, SECTION_PID)
 
 class SiteManager(object):
     '''
@@ -15,18 +16,20 @@ class SiteManager(object):
 
     def __init__(self):
         '''Initialization method reads the configuration file.'''
+        
+        # wait for configuration file to be available
+        while not os.path.exists( SiteManager.CONFIGFILEPATH ):
+            logging.info("Waiting to read configuration file: %s" % SiteManager.CONFIGFILEPATH )
+            time.sleep(1)
 
         self.config = ConfigParser.ConfigParser(allow_no_value=True)
-        # location of site specific settigs configuration file
+        # location of site specific settings configuration file
         self.cog_config_dir = SiteManager.COG_CONFIG_DIR
         try:
             config = self.config.read( SiteManager.CONFIGFILEPATH )
             logging.info("Site manager: using CoG settings from file(s): %s" % config)
-            if not config:
-                # if the configFilePath cannot be read (ie: doesn't exist), raise an error
-                raise ValueError
-
             print 'Initialized CoG settings from file: %s' % SiteManager.CONFIGFILEPATH
+            
         except Exception as e:
             print "Error reading site settings configuration file: %s" % SiteManager.CONFIGFILEPATH
 
@@ -42,7 +45,12 @@ class SiteManager(object):
         '''Returns True if the configuration file contains the named section.'''
 
         return self.config.has_section(section)
-    
+
+    def hasOption(self, section, option):
+        '''Returns True if the configuration file contains the named section and the named option.'''
+
+        return self.config.has_option(section, option)
+
     def isEsgfEnabled(self):
         '''Utility function to check whether this site is backed-up by an ESGF node.'''
         
@@ -53,7 +61,16 @@ class SiteManager(object):
         
         return self.hasConfig(SECTION_GLOBUS)
 
-    
-    
+    def isPidEnabled(self):
+        '''Utility function to check whether this site has been configured for data cart PIDs.'''
+
+        try:
+            __import__('esgfpid')
+            module_found = True
+        except ImportError:
+            module_found = False
+
+        return self.hasOption(SECTION_PID, 'PID_CREDENTIALS') and module_found
+
+
 siteManager = SiteManager()
-            

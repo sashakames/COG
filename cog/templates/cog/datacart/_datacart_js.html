@@ -1,6 +1,9 @@
 <!-- Javascript controls for datacart functionality --> 
 <script type="text/javascript">
   //<![CDATA[
+	  
+    var file_metadata_keys = ["cf_standard_name", "checksum_type", "dataset_id", "id", "instance_id", "master_id", "timestamp", 
+    	                          "variable", "variable_id", "variable_long_name", "variable_units", "version"];
 
 	// function to select/deselect all items in cart
 	function toggleAllDataCartItems() {
@@ -119,7 +122,8 @@
 
 	// formats a metadata key for display
 	function formatString(key) {
-		return key.replace(/_/g," ").replace(/,/g,", ")
+		//return key.replace(/_/g," ").replace(/,/g,", ")
+		return key.replace(/,/g,", ")
 	}
 
 	// function called if Ajax request succeded to create the files display widget
@@ -165,11 +169,13 @@
 				var keys = []
 				var keys2 = []
 				for (var field in doc) {
-					// display only some file metadata
+					// display some file metadata at top level
 					if (field == 'checksum' || field == 'size' || field == 'tracking_id') {
 						keys[keys.length] = field;
+					// display some other file metadata in pop-up window
 					} else {
-						if (field != 'score' && field != '_version_') {
+						//if (field != 'score' && field != '_version_') {
+					    if ( file_metadata_keys.indexOf(field.toLowerCase()) > -1) {
 							keys2[keys2.length] = field;
 						}
 					}
@@ -179,12 +185,17 @@
 				keys2 = keys2.sort();
 				for (var j=0; j<keys.length; j++) {
 					key = keys[j];
-					html += "<br/><span style='text-transform:capitalize;'>"+formatString(key) +"</span>: "+formatString(""+doc[key]);
+					// add link to pid landing page if tracking_id is a pid
+                    if ( key == 'tracking_id' && String(doc[key]).startsWith('hdl:') ) {
+                        html += "<br/><span>"+formatString(key) +"</span>: <a href='http://hdl.handle.net/"+doc[key]+"' target=_blank>"+doc[key]+"</a>";
+                    } else {
+                        html += "<br/><span>"+formatString(key) +"</span>: "+formatString(""+doc[key]);
+                    }
 				}
 				for (var j=0; j<keys2.length; j++) {
 					key = keys2[j];
 					if (j>0) html2 += "<br/>";
-					html2 += "<span style='text-transform:capitalize;'>"+formatString(key) +"</span>: "+formatString(""+doc[key]);
+					html2 += "<span>"+formatString(key) +"</span>: "+formatString(""+doc[key]);
 				}
 
 				<!-- special case: image metadata display-->
@@ -219,24 +230,38 @@
 					var imageUrl = null;
 
 					// loop over file access URLs, inspect service type, create hyperlinks
+					html += "Single File Access:<br/>";
 					for (var j=0; j<doc.url.length; j++) {
+						
 						var urlArray = doc.url[j].split('|');
+						var urlLink = urlArray[0];
+						var urlType = urlArray[1];
+						var urlTitle = urlArray[2];
+						
+						if (urlTitle.toLowerCase()=="httpserver") {
+							urlTitle = "HTTP Download";
+						} else if (urlTitle.toLowerCase()=="globus") {
+							urlTitle = "Globus Download";
+						} else if (urlTitle.toLowerCase()=="opendap") {
+							urlTitle = "OpenDAP Download";
+							urlLink = urlLink.replace('.html','.dods');
+						}
 
 						// special case: 'Thumbnail' service
-						if (urlArray[2].toLowerCase() == 'thumbnail') {
-							thumbnailUrl = urlArray[0]; // store thumbnail URL for later replacement
+						if (urlTitle.toLowerCase() == 'thumbnail') {
+							thumbnailUrl = urlLink; // store thumbnail URL for later replacement
 
 						} else {
 
 							// images: create hyperlink with graphic
-							if (urlArray[1].indexOf("image")>=0) {
-								html += "<a href='"+urlArray[0]+"'><img src='IMAGE_URL' width='50px'/></a>&nbsp;"; // 'IMAGE_URL'
-								imageUrl = urlArray[0]; // always store reference to image URL
+							if (urlType.indexOf("image")>=0) {
+								html += "<a href='"+urlLink+"'><img src='IMAGE_URL' width='50px'/></a><br/>"; // 'IMAGE_URL'
+								imageUrl = urlLink; // always store reference to image URL
 
 							// non-images: create hyperlink with text
 							} else {
-								if (urlArray[2].toLowerCase() != 'gridftp') {
-									html += "<a href='"+urlArray[0]+"'>"+urlArray[2]+"</a><br/>";
+								if (urlTitle.toLowerCase() != 'gridftp') {
+									html += "<a href='"+urlLink+"'>"+urlTitle+"</a><br/>";
 								}
 							}
 						}
@@ -275,11 +300,11 @@
 			var url = "javascript:showFiles('"+dataset_id+"','"+index_node+"','"+shard+"','"+numFound+"','"+project+"')";
 			html += "<div style='text-align:center'><a href=\""+url+"\">Show All Files</a></style>";
 
-		// link to show less files
+		// link to show fewer files
 		} else if (docs.length > DEFAULT_LIMIT) {
 			var url = "javascript:window.scrollTo(0,0); " // must resize the scrollbar
 				    + "javascript:showFiles('"+dataset_id+"','"+index_node+"','"+shard+"','"+DEFAULT_LIMIT+"','"+project+"')";
-			html += "<div style='text-align:center'><a href=\""+url+"\">Show Less Files</a></style>";
+			html += "<div style='text-align:center'><a href=\""+url+"\">Show Fewer Files</a></style>";
 
 		}
 
