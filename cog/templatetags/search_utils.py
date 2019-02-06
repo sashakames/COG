@@ -201,3 +201,13 @@ def showSearchConfigMessage(message, project):
 def _getProjectSearchConfigFilePath(project):
     
     return "$MEDIA_ROOT/config/%s/search.cfg" % project.short_name.lower()
+
+
+@register.filter
+def mapDataNodeToUrl(data_node):
+    dnmap = getattr(settings, 'DATANODE_URL_MAP', None)
+
+    if data_node in dnmap:
+        return dnmap[data_node]
+    return None
+            
