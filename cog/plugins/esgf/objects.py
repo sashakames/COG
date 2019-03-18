@@ -84,9 +84,10 @@ class ESGFSubscribers(Base):
     __tablename__ = 'subscribers'
     __table_args__ = { 'schema': 'esgf_subscription'}
 
+    id = Column(Integer, primary_key=True)
     email = Column(String)
-    key = Column(String, ForeignKey('esgf_subscription.keys.key'))
-    value = Column(String)
+    keyname = Column(String, ForeignKey('esgf_subscription.keys.key'))
+    valuename = Column(String)
 
 class ESGFKeys(Base):
     """ Class that represents the 'esgf_subscription.keys' table in the ESGF database."""
@@ -94,6 +95,6 @@ class ESGFKeys(Base):
     __tablename__ = 'subscribers'
     __table_args__ = { 'schema': 'esgf_subscription'}
   
-    key = Column(String, primary_key=True)
+    keyname = Column(String, primary_key=True)
     project = Column(String)
 
