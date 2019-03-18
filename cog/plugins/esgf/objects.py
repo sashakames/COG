@@ -78,7 +78,7 @@ class ESGFPermission(Base):
     group = relationship("ESGFGroup")
     role = relationship("ESGFRole")
 
-class ESGFSubscribers(Base)
+class ESGFSubscribers(Base):
     """ Class that represents the 'esgf_subscription.subscribers' table in the ESGF database."""
 
     __tablename__ = 'subscribers'
