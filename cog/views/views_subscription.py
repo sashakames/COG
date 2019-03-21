@@ -22,9 +22,9 @@ def subscribe(request):
 
 	if request.method=='GET':
 
-		return render(request, 'cog/subscribe/subscribe.html')
+		return render(request, 'cog/subscription/subscribe.html')
 	else:
 		email = request.user.email
-		return render( { 'email' : email })
+		return render(request, 'cog/subscription/subscribe_done.html' { 'email' : email })
 
 	

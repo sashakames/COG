@@ -92,7 +92,7 @@ class ESGFSubscribers(Base):
 class ESGFKeys(Base):
     """ Class that represents the 'esgf_subscription.keys' table in the ESGF database."""
 
-    __tablename__ = 'subscribers'
+    __tablename__ = 'keys'
     __table_args__ = { 'schema': 'esgf_subscription'}
   
     keyname = Column(String, primary_key=True)
