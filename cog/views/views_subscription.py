@@ -25,6 +25,6 @@ def subscribe(request):
 		return render(request, 'cog/subscription/subscribe.html')
 	else:
 		email = request.user.email
-		return render(request, 'cog/subscription/subscribe_done.html' { 'email' : email })
+		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email })
 
 	
