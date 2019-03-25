@@ -2,8 +2,12 @@
 
 {% block main %}
 
-<form name="userSubscribeForm" method=POST action="">
+<h2>
+Enter subscription information in the form below.
+</h2>
 
+<form name="userSubscribeForm" method=POST action="{{ url }}">
+{% csrf_token %}
 
 <table><tr><td>
 
@@ -34,7 +38,7 @@
                       type="text" id="subscription_value3" alt="Subscription Value" name="subscription_value3" size="30" value=""/>	
 
 </td></tr>
-
+</table>
 
 
 <input type="submit" value="Add Subscription Info"/>
