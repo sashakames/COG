@@ -277,14 +277,14 @@ class ESGFDatabaseManager():
                     session.close()    
                     
     def addUserSubscription(self, email, keyname, valuename):
-        session = self.session()
+        session = self.Session()
         newSubscriber = ESGFSubscribers(email=email, keyname=keyname, valuename=valuename)
         session.add(newSubscriber)
         session.commit()
         session.close()
 
     def deleteUserSubscription(self, id):
-        session = self.session()
+        session = self.Session()
         subs = session.query(ESGFSubscribers).get(id)
         session.delete(subs)
         session.commit()
