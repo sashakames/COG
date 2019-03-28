@@ -25,6 +25,31 @@ def subscribe(request):
 		return render(request, 'cog/subscription/subscribe.html')
 	else:
 		email = request.user.email
-		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email })
+
+		subs_count = 0
+
+		error_cond = ""
+		for i in range(3):
+
+			keystr = 'subscription_key{}'.format(i)
+			keyres = request.POST.get(keystr)
+
+			valstr = 'subscription_value{}'.format(i)
+			valres = request.POST.get(valstr)
+
+
+			if len(keyres) < 2 or len(valres) < 2:
+				continue
+
+			try:
+				esgfDatabaseManager.addUserSubscription(email, )
+			except BaseException e:
+				# log error
+				error_cond = e.str()
+				return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "An Error Occurred While Processing Your Request", })
+
+			subs_count = subs_count + 1
+
+		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email , 'count' : subs_count })
 
 	

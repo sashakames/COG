@@ -2,6 +2,17 @@
 
 {% block main %}
 
-	Thank you your email is: {{ email }}
+	Thank you your email  {{ email }} will be subscribed to this request.
 
+	{% if error %}  
+
+	<h2>{{ error }}</h2>  
+
+	{% endif %}  
+
+	{% if count > 0 %}
+
+	{{ count }} records processed.
+
+	{% endif %}
 {% endblock %}
