@@ -86,7 +86,7 @@ class ESGFSubscribers(Base):
 
     id = Column(Integer, primary_key=True)
     email = Column(String)
-    keyname = Column(String, ForeignKey('esgf_subscription.keys.key'))
+    keyname = Column(String)  # ForeignKey (Q: do we want to define this?)
     valuename = Column(String)
 
 class ESGFKeys(Base):
