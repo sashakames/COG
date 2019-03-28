@@ -7,7 +7,8 @@ from uuid import uuid4
 from django_openid_auth.models import UserOpenID
 
 
-from cog.plugins.esgf.objects import ESGFGroup, ESGFRole, ESGFUser, ESGFPermission
+from cog.plugins.esgf.objects import ESGFGroup, ESGFRole, ESGFUser, ESGFPermission,ESGFSubscribers
+
 from cog.plugins.esgf.permissionDAO import PermissionDAO
 from cog.plugins.esgf.groupDao import GroupDAO
 
