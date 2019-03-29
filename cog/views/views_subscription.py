@@ -38,6 +38,8 @@ def subscribe(request):
 			valstr = 'subscription_value{}'.format(i)
 			valres = request.POST.get(valstr, '')
 
+			print "GOES TO ERROR LOG!"
+
 			if len(keyres) < 2 or len(valres) < 2:
 				continue
 
