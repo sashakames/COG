@@ -38,6 +38,8 @@ def subscribe(request):
 			valstr = 'subscription_value{}'.format(i)
 			valres = request.POST.get(valstr, '')
 
+#			print "{},{},{},{},{}".format(i,keystr, valstr, keyres, valres)
+
 			if len(keyres) < 2 or len(valres) < 2:
 				continue
 
@@ -50,6 +52,8 @@ def subscribe(request):
 
 			subs_count = subs_count + 1
 
-		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email , 'count' : subs_count })
-
+		if subs_count > 0:
+			return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email , 'count' : subs_count })
+		else:
+			return render(request, 'cog/subscription/subscribe.html')			
 	
