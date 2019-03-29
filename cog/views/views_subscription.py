@@ -16,6 +16,7 @@ import os
 import re
 from cog.views.utils import getQueryDict
 
+from cog.plugins.esgf.security import esgfDatabaseManager
 
 @login_required
 def subscribe(request):
@@ -29,24 +30,23 @@ def subscribe(request):
 		subs_count = 0
 
 		error_cond = ""
-		for i in range(3):
+		for i in range(1,4):
 
 			keystr = 'subscription_key{}'.format(i)
-			keyres = request.POST.get(keystr)
+			keyres = request.POST.get(keystr, '')
 
 			valstr = 'subscription_value{}'.format(i)
-			valres = request.POST.get(valstr)
-
+			valres = request.POST.get(valstr, '')
 
 			if len(keyres) < 2 or len(valres) < 2:
 				continue
 
 			try:
-				esgfDatabaseManager.addUserSubscription(email, )
-			except BaseException e:
+				esgfDatabaseManager.addUserSubscription(email, keyres, valres )
+			except Exception as e:
 				# log error
-				error_cond = e.str()
-				return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "An Error Occurred While Processing Your Request", })
+				error_cond = str(e)
+				return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond), })
 
 			subs_count = subs_count + 1
 
