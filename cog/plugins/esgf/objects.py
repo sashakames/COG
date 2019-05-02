@@ -86,15 +86,18 @@ class ESGFSubscribers(Base):
 
     id = Column(Integer, primary_key=True)
     email = Column(String)
-    keyname = Column(String)  # ForeignKey (Q: do we want to define this?)
-    valuename = Column(String)
+    period = Column(Integer)  # ForeignKey (Q: do we want to define this?)
 
-class ESGFKeys(Base):
+class ESGFTerms(Base):
     """ Class that represents the 'esgf_subscription.keys' table in the ESGF database."""
 
-    __tablename__ = 'keys'
+    __tablename__ = 'properties'
     __table_args__ = { 'schema': 'esgf_subscription'}
   
-    keyname = Column(String, primary_key=True)
-    project = Column(String)
+    id = Column(Integer, primary_key=True)
+    subscribers_id = Column(Integer, ForeignKey('esgf_subscription.subscribers.id')) # FK
+    keyname = Column(String)
+    valuename = Column(String)
+
+
 

@@ -277,10 +277,16 @@ class ESGFDatabaseManager():
                     session.commit()
                     session.close()    
                     
-    def addUserSubscription(self, email, keyname, valuename):
+    def addUserSubscription(self, email, period, keynames_arr, valuenames_arr):
         session = self.Session()
-        newSubscriber = ESGFSubscribers(email=email, keyname=keyname, valuename=valuename)
-        session.add(newSubscriber)
+        newSubscriber = ESGFSubscribers(email=email)
+        sid = session.add(newSubscriber)
+
+        for key, val in zip(keynames_arr, valuenames_arr):
+            term = ESGFTerms(sid, key, val)
+            session.add(term)
+
+
         session.commit()
         session.close()
 
@@ -290,5 +296,11 @@ class ESGFDatabaseManager():
         session.delete(subs)
         session.commit()
         session.close()      
+
+    def lookupUserSubscriptions(self, email_in):
+        session = self.Session()
+
+        subs = session.query(ESGFSubscribers).filter(ESGFSubscribers.email==email_in)
+        
 
 esgfDatabaseManager = ESGFDatabaseManager()
