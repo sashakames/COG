@@ -34,15 +34,13 @@ def subscribe(request):
 	else:
 	# result.inserted_primary_key
 
-		if 
-
 		email = request.user.email
 
 		period = request.POST.get("period", -1)
 		if period == -1:
 			return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "Invalid period" })
-		subs_count = 0
 
+		subs_count = 0
 		error_cond = ""
 		keyarr = []
 		valarr = []
@@ -68,7 +66,7 @@ def subscribe(request):
 
 			try:
 				
-				esgfDatabaseManager.addUserSubscription(email, keyarr, valarr )
+				esgfDatabaseManager.addUserSubscription(email, period, keyarr, valarr )
 
 			except Exception as e:
 				# log error

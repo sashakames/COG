@@ -91,7 +91,7 @@ class ESGFSubscribers(Base):
 class ESGFTerms(Base):
     """ Class that represents the 'esgf_subscription.keys' table in the ESGF database."""
 
-    __tablename__ = 'properties'
+    __tablename__ = 'terms'
     __table_args__ = { 'schema': 'esgf_subscription'}
   
     id = Column(Integer, primary_key=True)
@@ -99,5 +99,4 @@ class ESGFTerms(Base):
     keyname = Column(String)
     valuename = Column(String)
 
-
-
+    subscriber = relationship("ESGFSubscribers")

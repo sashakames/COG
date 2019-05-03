@@ -7,7 +7,7 @@ from uuid import uuid4
 from django_openid_auth.models import UserOpenID
 
 
-from cog.plugins.esgf.objects import ESGFGroup, ESGFRole, ESGFUser, ESGFPermission,ESGFSubscribers
+from cog.plugins.esgf.objects import ESGFGroup, ESGFRole, ESGFUser, ESGFPermission, ESGFSubscribers, ESGFTerms
 
 from cog.plugins.esgf.permissionDAO import PermissionDAO
 from cog.plugins.esgf.groupDao import GroupDAO
@@ -279,11 +279,13 @@ class ESGFDatabaseManager():
                     
     def addUserSubscription(self, email, period, keynames_arr, valuenames_arr):
         session = self.Session()
-        newSubscriber = ESGFSubscribers(email=email)
-        sid = session.add(newSubscriber)
+        newSubscriber = ESGFSubscribers(email=email, period=period)
+        res = session.add(newSubscriber)
+        session.flush()
 
+        sid = res.id
         for key, val in zip(keynames_arr, valuenames_arr):
-            term = ESGFTerms(sid, key, val)
+            term = ESGFTerms(subscribers_id=sid, keyname=key, valuename=val)
             session.add(term)
 
 
