@@ -4,14 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden, HttpResponseServerError
 from django.shortcuts import render
 from django.template import RequestContext
-import urllib
-from cog.utils import getJson
-from urlparse import urlparse
-from cog.constants import SECTION_GLOBUS
-from cog.site_manager import siteManager
+
 import datetime
 
-from functools import wraps
 import os
 import re
 from cog.views.utils import getQueryDict
@@ -43,6 +38,9 @@ def subscribe(request):
 
 		email = request.user.email
 
+		period = request.POST.get("period", -1)
+		if period == -1:
+			return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "Invalid period" })
 		subs_count = 0
 
 		error_cond = ""
