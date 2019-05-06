@@ -88,6 +88,8 @@ class ESGFSubscribers(Base):
     email = Column(String)
     period = Column(Integer)  # ForeignKey (Q: do we want to define this?)
 
+    terms = relationship("ESGFTerms", back_populates("subscriber"))    
+
 class ESGFTerms(Base):
     """ Class that represents the 'esgf_subscription.keys' table in the ESGF database."""
 
@@ -99,4 +101,4 @@ class ESGFTerms(Base):
     keyname = Column(String)
     valuename = Column(String)
 
-    subscriber = relationship("ESGFSubscribers")
+    subscriber = relationship("ESGFSubscribers", back_populates("terms"))

@@ -280,12 +280,11 @@ class ESGFDatabaseManager():
     def addUserSubscription(self, email, period, keynames_arr, valuenames_arr):
         session = self.Session()
         newSubscriber = ESGFSubscribers(email=email, period=period)
-        res = session.add(newSubscriber)
-        session.flush()
+        session.add(newSubscriber)
 
-        sid = res.id
         for key, val in zip(keynames_arr, valuenames_arr):
-            term = ESGFTerms(subscribers_id=sid, keyname=key, valuename=val)
+            term = ESGFTerms(keyname=key, valuename=val)
+            term.subscriber = newSubscriber
             session.add(term)
 
 
