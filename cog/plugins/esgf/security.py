@@ -301,7 +301,8 @@ class ESGFDatabaseManager():
     def lookupUserSubscriptions(self, email_in):
         session = self.Session()
 
-        subs = session.query(ESGFSubscribers).filter(ESGFSubscribers.email==email_in)
-        
+        subs = session.query(ESGFSubscribers).filter(ESGFSubscribers.email==email_in).join(ESGFTerms)
+        session.close()
+        return subs
 
 esgfDatabaseManager = ESGFDatabaseManager()
