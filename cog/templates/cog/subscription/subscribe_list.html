@@ -2,6 +2,23 @@
 
 {% block main %}
 
-{{ dbres }}
+<table border celspacing="2" cellpadding="2">
+
+{% for row in dbres %}
+<tr>
+  {% for col in row %}
+  <td>
+	{% if col > -1 %}
+	{{ col }}
+	{% else %}
+ 	&nbsp;
+ 	{% endif %}
+   </td>	
+{% endfor %}
+</tr>
+{% endfor %}	
+
+
+</th>tabl
 
 {% endblock %}
