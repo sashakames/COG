@@ -301,22 +301,22 @@ class ESGFDatabaseManager():
         session.commit()
         session.close()      
 
-        def unpack(x):
+    def unpack(x):
 
+        for i, y in enumerate(x):
 
-            for i, y in enumerate(x):
-    
-                res = []
+            res = []
 
-                if i == 0:
-                    if y.id != self.id_save:
-                        res.append(y.id)
-                        self.id_save = y.id
-                    else:
-                        res.append(-1)
+            if i == 0:
+                if y.id != self.id_save:
+                    res.append(y.id)
+                    self.id_save = y.id
                 else:
-                    res.append(y.keyname)
-                    res.append(y.valuename)
+                    res.append(-1)
+            else:
+                res.append(y.keyname)
+                res.append(y.valuename)
+        return res
 
     def lookupUserSubscriptions(self, email_in):
         session = self.Session()
