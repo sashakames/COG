@@ -20,7 +20,7 @@ def lookup_and_render(request):
 
 	dbres = esgfDatabaseManager.lookupUserSubscriptions(email)
 
-	return render(request, 'cog/subscription/subscribe_list.html', { 'dbres' : str(dbres) } )
+	return render(request, 'cog/subscription/subscribe_list.html', { 'dbres' : dbres } )
 
 @login_required
 def subscribe(request):

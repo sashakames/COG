@@ -27,6 +27,8 @@ class ESGFDatabaseManager():
         from the configuration parameters contained in cog_settings.cfg'''
 
         #if os.getenv('DJANGO_SETTINGS_MODULE', None) and settings.ESGF_CONFIG:
+        self.id_save = -1;
+
         if settings.ESGF_CONFIG:
 
             #siteManager = SiteManager()
@@ -43,7 +45,7 @@ class ESGFDatabaseManager():
             # DAOs
             self.groupDao = GroupDAO(self.Session)
             self.permissionDao = PermissionDAO(self.Session)
-        self.id_save = -1;
+
 
     def buildOpenid(self, username):
         '''Builds an ESGF openid from a given username.'''
@@ -301,11 +303,12 @@ class ESGFDatabaseManager():
         session.commit()
         session.close()      
 
-    def unpack(x):
+    def unpack(self, x):
 
+        res = []
         for i, y in enumerate(x):
 
-            res = []
+#            print self.id_save
 
             if i == 0:
                 if y.id != self.id_save:
