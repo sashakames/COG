@@ -17,6 +17,8 @@ from django.conf import settings
 OPENID_EXTENSIONS = [""] + [str(i) for i in range(1,100)]
 ESGF_OPENID_TEMPLATE="https://<ESGF_HOSTNAME>/esgf-idp/openid/<ESGF_USERNAME>"
 
+
+
 class ESGFDatabaseManager():
     '''Class that manages connections to the ESGF database.'''
 
@@ -41,7 +43,8 @@ class ESGFDatabaseManager():
             # DAOs
             self.groupDao = GroupDAO(self.Session)
             self.permissionDao = PermissionDAO(self.Session)
-            
+        self.id_save = -1;
+
     def buildOpenid(self, username):
         '''Builds an ESGF openid from a given username.'''
         return ESGF_OPENID_TEMPLATE.replace("<ESGF_HOSTNAME>", settings.ESGF_HOSTNAME).replace("<ESGF_USERNAME>", username)        
@@ -298,11 +301,31 @@ class ESGFDatabaseManager():
         session.commit()
         session.close()      
 
+        def unpack(x):
+
+
+            for i, y in enumerate(x):
+    
+                res = []
+
+                if i == 0:
+                    if y.id != self.id_save:
+                        res.append(y.id)
+                        self.id_save = y.id
+                    else:
+                        res.append(-1)
+                else:
+                    res.append(y.keyname)
+                    res.append(y.valuename)
+
     def lookupUserSubscriptions(self, email_in):
         session = self.Session()
 
-        subs = session.query(ESGFSubscribers).filter(ESGFSubscribers.email==email_in).join(ESGFTerms)
+        subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.email==email_in).join(ESGFTerms)
         session.close()
-        return subs
+
+        res = [self.unpack(x) for x in subs]
+        
+        return res
 
 esgfDatabaseManager = ESGFDatabaseManager()

@@ -18,9 +18,9 @@ def lookup_and_render(request):
 
 	email = request.user.email
 
-	dbres = esgfDatabaseManager.getUserSubscriptions(email)
+	dbres = esgfDatabaseManager.lookupUserSubscriptions(email)
 
-	render(request, 'cog/subscription/subscribe_list.html', { 'dbres' : str(dbres) } )
+	return render(request, 'cog/subscription/subscribe_list.html', { 'dbres' : str(dbres) } )
 
 @login_required
 def subscribe(request):
