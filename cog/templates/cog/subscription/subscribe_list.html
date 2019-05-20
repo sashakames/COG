@@ -21,4 +21,12 @@
 
 </table>
 
+<form  name="userSubscribeDelForm" method=POST action="{{ url }}"> 
+
+<input type="hidden" name="action" value="delete"/>
+<input type="submit" value="Delete Subscription Info"/>
+<input type="text" size="5" id="subscription_id" name="subscription_id"/>
+Enter ALL to remove all subscriptions.
+</form>
+
 {% endblock %}

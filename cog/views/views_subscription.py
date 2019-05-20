@@ -29,11 +29,13 @@ def lookup_and_render(request):
 
 def delete_subscription(request):
 
+	res = request.POST.get('subscription_id', None) == "ALL"
 	try:
-		if request.POST.get('subscription_id') == "ALL":
+		if res == "ALL":
 			dbres = esgfDatabaseManager.deleteAllUserSubscriptions(email)
-		else:
-			dbres = esgfDatabaseManager.deleteUserSubscriptionById(request.POST.get('subscription_id'))
+		elif:
+ 
+			dbres = esgfDatabaseManager.deleteUserSubscriptionById(res)
 
 
 	
