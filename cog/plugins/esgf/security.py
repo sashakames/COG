@@ -296,12 +296,20 @@ class ESGFDatabaseManager():
         session.commit()
         session.close()
 
-    def deleteUserSubscription(self, id):
+    def deleteUserSubscriptionById(self, id):
         session = self.Session()
         subs = session.query(ESGFSubscribers).get(id)
         session.delete(subs)
         session.commit()
         session.close()      
+
+    def deleteAllUserSubscriptions(self, email_in):
+        session = self.Session()
+        subs = session.query(ESGFSubscribers).filter(email=email_in)
+        session.delete(subs)
+        session.commit()
+        session.close()      
+
 
     def unpack(self, x):
 

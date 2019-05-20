@@ -18,9 +18,32 @@ def lookup_and_render(request):
 
 	email = request.user.email
 
-	dbres = esgfDatabaseManager.lookupUserSubscriptions(email)
+	try:
+		dbres = esgfDatabaseManager.lookupUserSubscriptions(email)
+	except Exception as e:
+		# log error
+		error_cond = str(e)
+		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond) })
 
 	return render(request, 'cog/subscription/subscribe_list.html', { 'dbres' : dbres } )
+
+def delete_subscription(request):
+
+	try:
+		if request.POST.get('subscription_id') == "ALL":
+			dbres = esgfDatabaseManager.deleteAllUserSubscriptions(email)
+		else:
+			dbres = esgfDatabaseManager.deleteUserSubscriptionById(request.POST.get('subscription_id'))
+
+
+	
+	except Exception as e:
+		# log error
+		error_cond = str(e)
+		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond) })
+
+	return render(request, 'cog/subscription/subs_delete_done.html')
+
 
 @login_required
 def subscribe(request):
@@ -31,8 +54,11 @@ def subscribe(request):
 			return lookup_and_render(request)
 		else:	
 			return render(request, 'cog/subscription/subscribe.html')
+	elif request.POST.get('action') == "delete":
+		return delete_subscription(request)
 	else:
 	# result.inserted_primary_key
+
 
 		email = request.user.email
 
