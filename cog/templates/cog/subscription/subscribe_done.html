@@ -2,19 +2,24 @@
 
 {% block main %}
 
-	Thank you your email  {{ email }} will be subscribed to this request.
 
 	{% if error %}  
 
 	<h2>{{ error }}</h2>  
 
+	{% else %}
+
+	Thank you your email  {{ email }} will be subscribed to this request.
+
+		{% if count > 0 %}
+
+		{{ count }} query terms added.
+
+		{% endif %}
+
 	{% endif %}  
 
-	{% if count > 0 %}
 
-	{{ count }} query terms added.
-
-	{% endif %}
 {% endblock %}
 <p>
 <a href="/subscribe">ADD ANOTHER</a> 
