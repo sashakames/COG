@@ -332,9 +332,11 @@ class ESGFDatabaseManager():
     def lookupUserSubscriptions(self, email_in):
         session = self.Session()
 
+
         subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.email==email_in).join(ESGFTerms)
         session.close()
 
+        self.id_save = -1;
         res = [self.unpack(x) for x in subs]
         
         return res

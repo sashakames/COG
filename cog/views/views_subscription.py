@@ -13,6 +13,7 @@ from cog.views.utils import getQueryDict
 
 from cog.plugins.esgf.security import esgfDatabaseManager
 
+import traceback
 
 def lookup_and_render(request):
 
@@ -23,26 +24,24 @@ def lookup_and_render(request):
 	except Exception as e:
 		# log error
 		error_cond = str(e)
+		print traceback.print_exc()
 		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond) })
-
+	
 	return render(request, 'cog/subscription/subscribe_list.html', { 'dbres' : dbres } )
 
 def delete_subscription(request):
 
-	res = request.POST.get('subscription_id', None) == "ALL"
+	res = request.POST.get('subscription_id', None)
 	try:
 		if res == "ALL":
+			email = request.user.email
 			dbres = esgfDatabaseManager.deleteAllUserSubscriptions(email)
-		elif:
- 
+		else:
 			dbres = esgfDatabaseManager.deleteUserSubscriptionById(res)
-
-
-	
 	except Exception as e:
 		# log error
 		error_cond = str(e)
-		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond) })
+		return render(request, 'cog/subscription/subscribe_done.html', { 'error' : "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond) })
 
 	return render(request, 'cog/subscription/subs_delete_done.html')
 

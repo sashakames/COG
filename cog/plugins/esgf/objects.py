@@ -97,8 +97,8 @@ class ESGFTerms(Base):
     __table_args__ = { 'schema': 'esgf_subscription'}
   
     id = Column(Integer, primary_key=True)
-    subscribers_id = Column(Integer, ForeignKey('esgf_subscription.subscribers.id'), ondelete='CASCADE') # FK
+    subscribers_id = Column(Integer, ForeignKey('esgf_subscription.subscribers.id', ondelete='CASCADE')) # FK
     keyname = Column(String)
     valuename = Column(String)
 
-    subscriber = relationship("ESGFSubscribers", back_populates="terms")
+    subscriber = relationship("ESGFSubscribers", back_populates="terms", passive_deletes=True)
