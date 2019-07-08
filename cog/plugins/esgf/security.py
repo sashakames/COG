@@ -359,11 +359,10 @@ class ESGFDatabaseManager():
 
                     subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.user_id==esgfUser.id).join(ESGFTerms)
                     session.close()
-                    return
 
-        self.id_save = -1;
-        res = [self.unpack(x) for x in subs]
+                    self.id_save = -1;
+                    res = [self.unpack(x) for x in subs]
         
-        return res
+                    return res
 
 esgfDatabaseManager = ESGFDatabaseManager()
