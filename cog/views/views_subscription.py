@@ -17,10 +17,8 @@ import traceback
 
 def lookup_and_render(request):
 
-	email = request.user.email
-
 	try:
-		dbres = esgfDatabaseManager.lookupUserSubscriptions(email)
+		dbres = esgfDatabaseManager.lookupUserSubscriptions(request.user)
 	except Exception as e:
 		# log error
 		error_cond = str(e)
@@ -34,8 +32,7 @@ def delete_subscription(request):
 	res = request.POST.get('subscription_id', None)
 	try:
 		if res == "ALL":
-			email = request.user.email
-			dbres = esgfDatabaseManager.deleteAllUserSubscriptions(email)
+			dbres = esgfDatabaseManager.deleteAllUserSubscriptions(request.user)
 		else:
 			dbres = esgfDatabaseManager.deleteUserSubscriptionById(res)
 	except Exception as e:

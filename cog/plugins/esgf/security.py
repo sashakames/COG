@@ -298,11 +298,12 @@ class ESGFDatabaseManager():
                     for key, val in zip(keynames_arr, valuenames_arr):
                         term = ESGFTerms(keyname=key, valuename=val)
                         term.subscriber = newSubscriber
-            session.add(term)
+                        session.add(term)
 
 
-        session.commit()
-        session.close()
+                    session.commit()
+                    session.close()
+                    return
 
     def deleteUserSubscriptionById(self, id):
         session = self.Session()
@@ -312,11 +313,19 @@ class ESGFDatabaseManager():
         session.close()      
 
     def deleteAllUserSubscriptions(self, email_in):
-        session = self.Session()
-        subs = session.query(ESGFSubscribers).filter(email=email_in)
-        session.delete(subs)
-        session.commit()
-        session.close()      
+         for openid in user.profile.openids():
+            
+            # openid must match the configured ESGF host name
+            if settings.ESGF_HOSTNAME in openid:
+                
+                esgfUser = self.getUserByOpenid(openid)
+                if esgfUser is not None:
+                    session = self.Session()
+                    subs = session.query(ESGFSubscribers).filter(email=email_in)
+                    session.delete(subs)
+                    session.commit()
+                    session.close()
+                    return    
 
 
     def unpack(self, x):
@@ -337,12 +346,20 @@ class ESGFDatabaseManager():
                 res.append(y.valuename)
         return res
 
-    def lookupUserSubscriptions(self, email_in):
-        session = self.Session()
+    def lookupUserSubscriptions(self, user):
+         for openid in user.profile.openids():
+            
+            # openid must match the configured ESGF host name
+            if settings.ESGF_HOSTNAME in openid:
+                
+                esgfUser = self.getUserByOpenid(openid)
+                if esgfUser is not None:
+                    session = self.Session()
 
 
-        subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.email==email_in).join(ESGFTerms)
-        session.close()
+                    subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.user_id==).join(ESGFTerms)
+                    session.close()
+                    return
 
         self.id_save = -1;
         res = [self.unpack(x) for x in subs]
