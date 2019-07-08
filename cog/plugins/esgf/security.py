@@ -312,7 +312,7 @@ class ESGFDatabaseManager():
         session.commit()
         session.close()      
 
-    def deleteAllUserSubscriptions(self, email_in):
+    def deleteAllUserSubscriptions(self, user):
          for openid in user.profile.openids():
             
             # openid must match the configured ESGF host name
@@ -321,7 +321,7 @@ class ESGFDatabaseManager():
                 esgfUser = self.getUserByOpenid(openid)
                 if esgfUser is not None:
                     session = self.Session()
-                    subs = session.query(ESGFSubscribers).filter(email=email_in)
+                    subs = session.query(ESGFSubscribers).filter(user_id=esgfUser.id)
                     session.delete(subs)
                     session.commit()
                     session.close()
@@ -357,7 +357,7 @@ class ESGFDatabaseManager():
                     session = self.Session()
 
 
-                    subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.user_id==).join(ESGFTerms)
+                    subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.user_id==esgfUser.id).join(ESGFTerms)
                     session.close()
                     return
 
