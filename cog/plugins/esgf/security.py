@@ -282,14 +282,22 @@ class ESGFDatabaseManager():
                     session.commit()
                     session.close()    
                     
-    def addUserSubscription(self, email, period, keynames_arr, valuenames_arr):
-        session = self.Session()
-        newSubscriber = ESGFSubscribers(email=email, period=period)
-        session.add(newSubscriber)
+    def addUserSubscription(self, user, period, keynames_arr, valuenames_arr):
+        for openid in user.profile.openids():
+            
+            # openid must match the configured ESGF host name
+            if settings.ESGF_HOSTNAME in openid:
+                
+                esgfUser = self.getUserByOpenid(openid)
+                if esgfUser is not None:
+                    session = self.Session()
 
-        for key, val in zip(keynames_arr, valuenames_arr):
-            term = ESGFTerms(keyname=key, valuename=val)
-            term.subscriber = newSubscriber
+                    newSubscriber = ESGFSubscribers(user_id=esgfUser.id, period=period)
+                    session.add(newSubscriber)
+
+                    for key, val in zip(keynames_arr, valuenames_arr):
+                        term = ESGFTerms(keyname=key, valuename=val)
+                        term.subscriber = newSubscriber
             session.add(term)
 
 
