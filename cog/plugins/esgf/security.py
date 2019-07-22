@@ -321,8 +321,8 @@ class ESGFDatabaseManager():
                 esgfUser = self.getUserByOpenid(openid)
                 if esgfUser is not None:
                     session = self.Session()
-                    subs = session.query(ESGFSubscribers).filter(ESGFSubscribers.user_id==esgfUser.id)
-                    session.delete(subs)
+                    subs = session.query(ESGFSubscribers).filter_by(user_id=esgfUser.id)
+                    subs.delete()
                     session.commit()
                     session.close()
                     return    
