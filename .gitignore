@@ -24,3 +24,5 @@ database/
 cog.egg-info/
 dist/
 build/
+
+settings.py
