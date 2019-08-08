@@ -85,7 +85,7 @@ class ESGFSubscribers(Base):
     __table_args__ = { 'schema': 'esgf_subscription'}
 
     id = Column(Integer, primary_key=True)
-    email = Column(String)
+    user_id = Column(Integer, ForeignKey('esgf_security.user.id'))
     period = Column(Integer)  # ForeignKey (Q: do we want to define this?)
 
     terms = relationship("ESGFTerms", back_populates="subscriber", passive_deletes=True, cascade='all, delete, delete-orphan')    

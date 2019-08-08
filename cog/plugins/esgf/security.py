@@ -282,19 +282,28 @@ class ESGFDatabaseManager():
                     session.commit()
                     session.close()    
                     
-    def addUserSubscription(self, email, period, keynames_arr, valuenames_arr):
-        session = self.Session()
-        newSubscriber = ESGFSubscribers(email=email, period=period)
-        session.add(newSubscriber)
+    def addUserSubscription(self, user, period, keynames_arr, valuenames_arr):
+        for openid in user.profile.openids():
+            
+            # openid must match the configured ESGF host name
+            if settings.ESGF_HOSTNAME in openid:
+                
+                esgfUser = self.getUserByOpenid(openid)
+                if esgfUser is not None:
+                    session = self.Session()
 
-        for key, val in zip(keynames_arr, valuenames_arr):
-            term = ESGFTerms(keyname=key, valuename=val)
-            term.subscriber = newSubscriber
-            session.add(term)
+                    newSubscriber = ESGFSubscribers(user_id=esgfUser.id, period=period)
+                    session.add(newSubscriber)
+
+                    for key, val in zip(keynames_arr, valuenames_arr):
+                        term = ESGFTerms(keyname=key, valuename=val)
+                        term.subscriber = newSubscriber
+                        session.add(term)
 
 
-        session.commit()
-        session.close()
+                    session.commit()
+                    session.close()
+                    return
 
     def deleteUserSubscriptionById(self, id):
         session = self.Session()
@@ -303,12 +312,20 @@ class ESGFDatabaseManager():
         session.commit()
         session.close()      
 
-    def deleteAllUserSubscriptions(self, email_in):
-        session = self.Session()
-        subs = session.query(ESGFSubscribers).filter(email=email_in)
-        session.delete(subs)
-        session.commit()
-        session.close()      
+    def deleteAllUserSubscriptions(self, user):
+         for openid in user.profile.openids():
+            
+            # openid must match the configured ESGF host name
+            if settings.ESGF_HOSTNAME in openid:
+                
+                esgfUser = self.getUserByOpenid(openid)
+                if esgfUser is not None:
+                    session = self.Session()
+                    subs = session.query(ESGFSubscribers).filter_by(user_id=esgfUser.id)
+                    subs.delete()
+                    session.commit()
+                    session.close()
+                    return    
 
 
     def unpack(self, x):
@@ -329,16 +346,23 @@ class ESGFDatabaseManager():
                 res.append(y.valuename)
         return res
 
-    def lookupUserSubscriptions(self, email_in):
-        session = self.Session()
+    def lookupUserSubscriptions(self, user):
+         for openid in user.profile.openids():
+            
+            # openid must match the configured ESGF host name
+            if settings.ESGF_HOSTNAME in openid:
+                
+                esgfUser = self.getUserByOpenid(openid)
+                if esgfUser is not None:
+                    session = self.Session()
 
 
-        subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.email==email_in).join(ESGFTerms)
-        session.close()
+                    subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.user_id==esgfUser.id).join(ESGFTerms)
+                    session.close()
 
-        self.id_save = -1;
-        res = [self.unpack(x) for x in subs]
+                    self.id_save = -1;
+                    res = [self.unpack(x) for x in subs]
         
-        return res
+                    return res
 
 esgfDatabaseManager = ESGFDatabaseManager()
