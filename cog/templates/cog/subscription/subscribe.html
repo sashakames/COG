@@ -11,10 +11,10 @@
 <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}{{ file }}" />
 {%endfor%} {% endblock %} {% block main %}
 
+<!--
 <h2>
   Enter subscription information in the form below.
-</h2>
-
+</h2>  
 <form name="userSubscribeForm" method="POST" action="{{ url }}">
   {% csrf_token %}
 
@@ -100,7 +100,7 @@
   Period Code: <input type="text" name="period" id="period" size="10" />
 
   <input type="submit" value="Add Subscription Info" />
-</form>
+</form>-->
 <p>
   <a href="/subscription?action=modify">Examine/Modify subscriptions</a>
 </p>

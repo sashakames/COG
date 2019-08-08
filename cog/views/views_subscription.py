@@ -35,7 +35,7 @@ react_files = {
 react_props = {
     'name': "COG",
     'enthusiasmLevel': 7,
-    'items': ["test1", "test2", "test3", "test4", "test5"]
+    'projects': ["project1","project2","project3","project4","project5"]
 }
 
 
