@@ -205,7 +205,7 @@ def _getProjectSearchConfigFilePath(project):
 
 @register.filter
 def mapDataNodeToUrl(data_node):
-    dnmap = getattr(settings, 'DATANODE_URL_MAP', None)
+    dnmap = getattr(settings, 'DATANODE_URL_MAP', {})
 
     if data_node in dnmap:
         return dnmap[data_node]
