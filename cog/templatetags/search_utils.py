@@ -225,7 +225,6 @@ def showSearchConfigMessage(message, project):
 def _getProjectSearchConfigFilePath(project):
     
     return "$MEDIA_ROOT/config/%s/search.cfg" % project.short_name.lower()
-<<<<<<< HEAD
 
 
 @register.filter
@@ -236,5 +235,4 @@ def mapDataNodeToUrl(data_node):
         return dnmap[data_node]
     return None
             
-=======
->>>>>>> v3.15.2-patch1
+
