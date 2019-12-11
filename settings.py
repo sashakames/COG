@@ -2,6 +2,7 @@ import os
 import logging
 import re
 from cog.utils import str2bool
+import json
 
 rel = lambda *x: os.path.join(os.path.abspath(os.path.dirname(__file__)), *x)
 
@@ -16,6 +17,9 @@ from cog.site_manager import siteManager
 from cog.constants import SECTION_ESGF, SECTION_PID
 
 import json
+
+COG_VERSION = 'v3.15.4'
+
 
 SITE_NAME = siteManager.get('SITE_NAME', default='Local CoG')
 SITE_DOMAIN = siteManager.get('SITE_DOMAIN', default='localhost:8000')
@@ -330,6 +334,15 @@ CAPTCHA_IMAGE_SIZE = (100, 40)
 
 #==== Quality Control Flags references ==================================
 
+
 QCFLAGS_URLS = { 'obs4mips_indicators': 'https://www.earthsystemcog.org/projects/obs4mips/data-indicators' }
 
 DATANODE_URL_MAP = json.load(open('/esg/config/esgf_datatnode_urls.json'))
+
+QCFLAGS_URLS = { 'obs4mips_indicators': 'https://esgf-node.llnl.gov/projects/obs4mips/data-indicators' }
+
+DATANODE_STATUS_FILE = '/esg/config/esgf_datanode_status.json'
+
+HAS_DATANODE_STATUS = os.path.isfile(DATANODE_STATUS_FILE)
+
+
