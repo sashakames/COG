@@ -13,7 +13,7 @@
 		{% if record.fields.data_node.0 %} <br/>Data Node: {{ record.fields.data_node.0 }}{% endif %}
 		{% if record.fields.version.0 %} <br/>Version: {{ record.fields.version.0 }}{% endif %}
 	</div>
-	
+ß	
 	Full Dataset Services: &nbsp; 
 	
 	<!-- Record metadata -->
@@ -66,22 +66,9 @@
 				<!-- add this service to the catalog -->
 				<script language="javascript">services.add( new Service('{{record.id}}','{{url.0}}', '{{url.1}}','{{url.2}}','{{record.fields.index_node.0}}') );</script>
 		
-				<!-- THREDDS -->
-				{% if url.1 == 'application/html+thredds' %}
-				    &nbsp; 
-				    <div style="display: inline-block;">
-				    [ <a href="{{url.0}}" target="_blank"><strong>THREDDS Catalog</strong></a> ]
-				    </div>
-                            
-                                    {% if 'WPS_ENDPOINT'|settings_value %}
-                                      &nbsp; [ <strong><a href="javascript:wps('{{record.id}}', '{{'WPS_ENDPOINT'|settings_value}}', {{record.fields|wps_arguments}})">Compute</a></strong> ]
-                                    {% endif %}
-		
-				<!-- LAS -->
-
 		
 				<!-- WGET -->
-				{% elif url.1 == 'application/wget' %}
+				{% if url.1 == 'application/wget' %}
 					&nbsp; 
 					<div style="display: inline-block;">
 						[ <a href="javascript:wgetScript('{{ record.fields.index_node.0}}','{{ record.fields.shard.0 }}','{{ record.id }}')"><strong>WGET Script</strong></a> ]
@@ -126,7 +113,7 @@
 
 
 				<!--  all other services -->
-			{% else %}
+			{% elif url.2 != 'THREDDS' %}
 					&nbsp; 
 					<div style="display: inline-block;">
 					[ <a href="{{url.0}}"><strong>{{ url.2 }}</strong></a> ]
