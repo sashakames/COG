@@ -31,11 +31,14 @@ react_files = {
     'js': js_files
 }
 
+# Example data that subscriptions front-end could use
 test_data = {
-    "activityList": {},
-    "experimentList": {}
+    "user_info": {"first":"John","last":"Doe","hobbies":"Programming.","send_emails_to":"This place."},
+    "activities": {"method":["email"],"weekly":["CMIP"],"monthly":["CMIP6"]},
+    "experiments": {"method":["popup"],"daily":["test", "experiment 2"],"weekly":["test2"]},
 }
 
+# To pass data to front-end, use react-props and pass it a dictionary with key-value pairs
 react_props = test_data
 
 def lookup_and_render(request):
