@@ -9,7 +9,10 @@
 <!-- Add CSS styling for the React component-->
 {% for file in react_files.css %}
 <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}{{ file }}" />
-{%endfor%} {% endblock %} {% block main %}
+{%endfor%}
+{% endblock %}
+
+{% block main %}
 
 <!--
 <h2>
@@ -115,10 +118,16 @@
 </div>
 
 <script>
+  window.token = "{% csrf_token %}"
   window.props = {{react_props|json}};
   window.react_mount = document.getElementById("cog-react");
 </script>
 
 {% for file in react_files.js %}
 <script src="{{ STATIC_URL }}{{ file }}"></script>
-{% endfor %} {% endblock %}
+{% endfor %}
+<!-- Optional map files for developer tools-->
+{% for file in react_files.map %}
+<script src="{{ STATIC_URL }}{{ file }}" type="application/json"></script>
+{% endfor %}
+{% endblock %}

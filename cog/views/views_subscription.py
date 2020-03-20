@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden, HttpResponseServerError
 from django.shortcuts import render
 from django.template import RequestContext
+import json
 
 import datetime
 
@@ -26,13 +27,30 @@ css_files = os.listdir(
 js_files = list(map(lambda f: "cog/cog-react/js/" + f, js_files))
 css_files = list(map(lambda f: "cog/cog-react/css/" + f, css_files))
 
+map_files = []
+js_only = []
+for f in js_files:
+    if f.endswith(".map"):
+        map_files.append(f)
+    else:
+        js_only.append(f)
+
+css_only = []
+for f in css_files:
+    if f.endswith(".map"):
+        map_files.append(f)
+    else:
+        css_only.append(f)
+
 react_files = {
-    'css': css_files,
-    'js': js_files
+    'css': css_only,
+    'js': js_only,
+    'map': map_files
 }
 
 # Example data that subscriptions front-end could use
 test_data = {
+    "post_url": "/subscription/",
     "user_info": {"first":"John","last":"Doe","hobbies":"Programming.","send_emails_to":"This place."},
     "activities": {"method":["email"],"weekly":["CMIP"],"monthly":["CMIP6"]},
     "experiments": {"method":["popup"],"daily":["test", "experiment 2"],"weekly":["test2"]},
@@ -49,7 +67,7 @@ def lookup_and_render(request):
         # log error
         error_cond = str(e)
         print(traceback.print_exc())
-        return render(request, 'cog/subscription/subscribe_done.html', {'email': email,  'error': "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond)})
+        return render(request, 'cog/subscription/subscribe_done.html', {'email': request.user.email,  'error': "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond)})
 
     return render(request, 'cog/subscription/subscribe_list.html', {'dbres': dbres})
 
@@ -69,12 +87,41 @@ def delete_subscription(request):
 
     return render(request, 'cog/subscription/subs_delete_done.html')
 
+def temp_print(request, var_name, method="POST"):
+    print(request.POST)
+    if request.method == "POST":
+        data = json.loads(request.body)
+    else:
+        data = request.GET.copy()
+    
+    if(data):
+        try:
+            print("{} {}: {}".format(method, var_name, data[var_name]))
+        except KeyError:
+            print("Key error: {}".format(data))
+    else:
+        print("{} {}: None".format(method, var_name))
 
 @login_required
 def subscribe(request):
 
-    if request.method == 'GET':
+    # Contains the data from the form
+    if request.method == "POST":
+        # Available keys from the front-end drop-downs:
+        # 'activity_ids', 'experiment_ids', 'frequencies'
+        # 'realms', 'variables', 'models'
+        data = json.loads(request.body)
 
+        # Example obtaining data
+        if data:
+            for key in data.keys():
+                print("{}: {}".format(key, data[key]))
+
+                # Example response sent back to front-end
+        test = {"status": "All good!","data": data}
+        return HttpResponse(json.dumps(test),content_type='application/json')
+
+    if request.method == 'GET':
         if request.GET.get('action') == "modify":
             return lookup_and_render(request)
         else:
@@ -82,10 +129,9 @@ def subscribe(request):
     elif request.POST.get('action') == "delete":
         return delete_subscription(request)
     else:
-
         period = request.POST.get("period", -1)
         if period == -1:
-            return render(request, 'cog/subscription/subscribe_done.html', {'email': email,  'error': "Invalid period"})
+            return render(request, 'cog/subscription/subscribe_done.html', {'email': request.user.email,  'error': "Invalid period"})
 
         subs_count = 0
         error_cond = ""
