@@ -7,7 +7,8 @@ from uuid import uuid4
 from django_openid_auth.models import UserOpenID
 
 
-from cog.plugins.esgf.objects import ESGFGroup, ESGFRole, ESGFUser, ESGFPermission
+from cog.plugins.esgf.objects import ESGFGroup, ESGFRole, ESGFUser, ESGFPermission, ESGFSubscribers, ESGFTerms
+
 from cog.plugins.esgf.permissionDAO import PermissionDAO
 from cog.plugins.esgf.groupDao import GroupDAO
 
@@ -15,6 +16,8 @@ from django.conf import settings
 
 OPENID_EXTENSIONS = [""] + [str(i) for i in range(1,100)]
 ESGF_OPENID_TEMPLATE="https://<ESGF_HOSTNAME>/esgf-idp/openid/<ESGF_USERNAME>"
+
+
 
 class ESGFDatabaseManager():
     '''Class that manages connections to the ESGF database.'''
@@ -24,6 +27,8 @@ class ESGFDatabaseManager():
         from the configuration parameters contained in cog_settings.cfg'''
 
         #if os.getenv('DJANGO_SETTINGS_MODULE', None) and settings.ESGF_CONFIG:
+        self.id_save = -1;
+
         if settings.ESGF_CONFIG:
 
             #siteManager = SiteManager()
@@ -40,7 +45,8 @@ class ESGFDatabaseManager():
             # DAOs
             self.groupDao = GroupDAO(self.Session)
             self.permissionDao = PermissionDAO(self.Session)
-            
+
+
     def buildOpenid(self, username):
         '''Builds an ESGF openid from a given username.'''
         return ESGF_OPENID_TEMPLATE.replace("<ESGF_HOSTNAME>", settings.ESGF_HOSTNAME).replace("<ESGF_USERNAME>", username)        
@@ -276,4 +282,87 @@ class ESGFDatabaseManager():
                     session.commit()
                     session.close()    
                     
+    def addUserSubscription(self, user, period, keynames_arr, valuenames_arr):
+        for openid in user.profile.openids():
+            
+            # openid must match the configured ESGF host name
+            if settings.ESGF_HOSTNAME in openid:
+                
+                esgfUser = self.getUserByOpenid(openid)
+                if esgfUser is not None:
+                    session = self.Session()
+
+                    newSubscriber = ESGFSubscribers(user_id=esgfUser.id, period=period)
+                    session.add(newSubscriber)
+
+                    for key, val in zip(keynames_arr, valuenames_arr):
+                        term = ESGFTerms(keyname=key, valuename=val)
+                        term.subscriber = newSubscriber
+                        session.add(term)
+
+
+                    session.commit()
+                    session.close()
+                    return
+
+    def deleteUserSubscriptionById(self, id):
+        session = self.Session()
+        subs = session.query(ESGFSubscribers).get(id)
+        session.delete(subs)
+        session.commit()
+        session.close()      
+
+    def deleteAllUserSubscriptions(self, user):
+         for openid in user.profile.openids():
+            
+            # openid must match the configured ESGF host name
+            if settings.ESGF_HOSTNAME in openid:
+                
+                esgfUser = self.getUserByOpenid(openid)
+                if esgfUser is not None:
+                    session = self.Session()
+                    subs = session.query(ESGFSubscribers).filter_by(user_id=esgfUser.id)
+                    subs.delete()
+                    session.commit()
+                    session.close()
+                    return    
+
+
+    def unpack(self, x):
+
+        res = []
+        for i, y in enumerate(x):
+
+#            print self.id_save
+
+            if i == 0:
+                if y.id != self.id_save:
+                    res.append(y.id)
+                    self.id_save = y.id
+                else:
+                    res.append(-1)
+            else:
+                res.append(y.keyname)
+                res.append(y.valuename)
+        return res
+
+    def lookupUserSubscriptions(self, user):
+         for openid in user.profile.openids():
+            
+            # openid must match the configured ESGF host name
+            if settings.ESGF_HOSTNAME in openid:
+                
+                esgfUser = self.getUserByOpenid(openid)
+                if esgfUser is not None:
+                    session = self.Session()
+
+
+                    subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.user_id==esgfUser.id).join(ESGFTerms)
+                    session.close()
+
+                    self.id_save = -1;
+                    res = [self.unpack(x) for x in subs]
+        
+                    return res
+
 esgfDatabaseManager = ESGFDatabaseManager()

@@ -77,3 +77,28 @@ class ESGFPermission(Base):
     user = relationship("ESGFUser")
     group = relationship("ESGFGroup")
     role = relationship("ESGFRole")
+
+class ESGFSubscribers(Base):
+    """ Class that represents the 'esgf_subscription.subscribers' table in the ESGF database."""
+
+    __tablename__ = 'subscribers'
+    __table_args__ = { 'schema': 'esgf_subscription'}
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('esgf_security.user.id'))
+    period = Column(Integer)  # ForeignKey (Q: do we want to define this?)
+
+    terms = relationship("ESGFTerms", back_populates="subscriber", passive_deletes=True, cascade='all, delete, delete-orphan')    
+
+class ESGFTerms(Base):
+    """ Class that represents the 'esgf_subscription.keys' table in the ESGF database."""
+
+    __tablename__ = 'terms'
+    __table_args__ = { 'schema': 'esgf_subscription'}
+  
+    id = Column(Integer, primary_key=True)
+    subscribers_id = Column(Integer, ForeignKey('esgf_subscription.subscribers.id', ondelete="CASCADE")) # FK
+    keyname = Column(String)
+    valuename = Column(String)
+
+    subscriber = relationship("ESGFSubscribers", back_populates='terms') 

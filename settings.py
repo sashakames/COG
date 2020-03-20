@@ -5,75 +5,68 @@ from cog.utils import str2bool
 
 rel = lambda *x: os.path.join(os.path.abspath(os.path.dirname(__file__)), *x)
 
+ESGF_CONF_DIR = os.getenv('ESGF_CONF_DIR', rel(''))
+
 ''' 
 SITE SPECIFIC CONFIGURATION
 These parameters are read from file 'cog_settings.cfg' 
 located in directory COG_CONFIG_DIR (or by default '/usr/local/cog/cog_config').
 Each parameter has a default value.
 '''
-
-from cog.site_manager import siteManager
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 from cog.constants import SECTION_ESGF, SECTION_PID
-
-SITE_NAME = siteManager.get('SITE_NAME', default='Local CoG')
-SITE_DOMAIN = siteManager.get('SITE_DOMAIN', default='localhost:8000')
-TIME_ZONE = siteManager.get('TIME_ZONE', default='America/Denver')
-COG_MAILING_LIST = siteManager.get('COG_MAILING_LIST', default='cog_info@list.woc.noaa.gov')
-SECRET_KEY = siteManager.get('SECRET_KEY', default='ds4sjjj(76K=={%$HHH1@#b:l;')
+ESGF_CONFIG = True
+SITE_NAME = "Local CoG" 
+SITE_DOMAIN = "localhost:8000"
+TIME_ZONE = 'America/Denver'
+COG_MAILING_LIST = 'cog_info@list.woc.noaa.gov'
+SECRET_KEY = 'ds4sjjj(76K=={%$HHH1@#b:l;'
 # for SQLLite back-end
-DATABASE_PATH = siteManager.get('DATABASE_PATH', default="%s/django.data" % siteManager.cog_config_dir)
+DATABASE_PATH = ESGF_CONF_DIR + "django.data"
 # for postgres back-end
-DATABASE_NAME = siteManager.get('DATABASE_NAME', default='cogdb')
-DATABASE_USER = siteManager.get('DATABASE_USER')
-DATABASE_PASSWORD = siteManager.get('DATABASE_PASSWORD')
-DATABASE_HOST = siteManager.get('DATABASE_HOST', default='localhost')
-DATABASE_PORT = siteManager.get('DATABASE_PORT', default=5432)
-MY_PROJECTS_REFRESH_SECONDS = int(siteManager.get('MY_PROJECTS_REFRESH_SECONDS', default=3600))  # one hour
-PWD_EXPIRATION_DAYS = int(siteManager.get('PWD_EXPIRATION_DAYS', default=0))  # 0: no expiration
-IDP_REDIRECT = siteManager.get('IDP_REDIRECT', default=None)
-VISUS_SITE = siteManager.get('VISUS_SITE', default=None)
-HOME_PROJECT = siteManager.get('HOME_PROJECT', default='cog')
-MEDIA_ROOT = siteManager.get('MEDIA_ROOT', default="%s/site_media" % siteManager.cog_config_dir)
-DEFAULT_SEARCH_URL = siteManager.get('DEFAULT_SEARCH_URL', default='http://hydra.fsl.noaa.gov/esg-search/search/')
-DJANGO_DATABASE = siteManager.get('DJANGO_DATABASE', default='sqllite3')
-if siteManager.get('DEBUG', default='False').lower() == 'true':
-    DEBUG = True
-else:
-    DEBUG = False
-ALLOWED_HOSTS = siteManager.get('ALLOWED_HOSTS', default=SITE_DOMAIN).split(",")
-print 'Using DEBUG=%s ALLOWED_HOSTS=%s' % (DEBUG, ALLOWED_HOSTS)
-IDP_WHITELIST = siteManager.get('IDP_WHITELIST', default=None)
-print 'Using IdP whitelist(s): %s' % IDP_WHITELIST
-KNOWN_PROVIDERS = siteManager.get('KNOWN_PROVIDERS', default=None)
-print 'Using list of known Identity Providers: %s' % KNOWN_PROVIDERS
-PEER_NODES = siteManager.get('PEER_NODES', default=None)
-USE_CAPTCHA = str2bool(siteManager.get('USE_CAPTCHA', default='True'))
-print 'Using list of ESGF/CoG peer nodes from: %s' % PEER_NODES
-# DEVELOPMENT/PRODUCTION server switch
-PRODUCTION_SERVER = str2bool(siteManager.get('PRODUCTION_SERVER', default='False'))
-print 'Production server flag=%s' % PRODUCTION_SERVER
+DATABASE_NAME = "cogdb"
+DATABASE_USER = "dbsuper" #siteManager.get('DATABASE_USER')
+DATABASE_PASSWORD = "EsgfLLNL" #siteManager.get('DATABASE_PASSWORD')
+DATABASE_HOST = "pcmdi8vm.llnl.gov" #siteManager.get('DATABASE_HOST', default='localhost')
+DATABASE_PORT = "5432" #siteManager.get('DATABASE_PORT', default=5432)
+MY_PROJECTS_REFRESH_SECONDS = 3600
+PWD_EXPIRATION_DAYS = 0 # 0: no expiration
+IDP_REDIRECT = None #siteManager.get('IDP_REDIRECT', default=None)
+VISUS_SITE = None
+HOME_PROJECT = 'TestProject'
+MEDIA_ROOT = ESGF_CONF_DIR + 'site_media'
+DEFAULT_SEARCH_URL = "http://pcmdi8vm.llnl.gov/esg-search/search/"
+DJANGO_DATABASE = "postgres"
 
-WPS_ENDPOINT = siteManager.get('WPS_ENDPOINT', default=None);
+DEBUG = True
+ALLOWED_HOSTS = ['localhost'] #siteManager.get('ALLOWED_HOSTS', default=SITE_DOMAIN).split(",")
+IDP_WHITELIST = ESGF_CONF_DIR + "esgf_idp.xml" #siteManager.get('IDP_WHITELIST', default=None)
+KNOWN_PROVIDERS = ESGF_CONF_DIR + "esgf_known_providers.xml" #siteManager.get('KNOWN_PROVIDERS', default=None)
+PEER_NODES = ESGF_CONF_DIR + "esgf_cogs.xml"#siteManager.get('PEER_NODES', default=None)
+USE_CAPTCHA = False
+# DEVELOPMENT/PRODUCTION server switch
+PRODUCTION_SERVER = True
+
+WPS_ENDPOINT = None
 # Fields that will be added to the query string
-WPS_FIELDS = siteManager.get('WPS_FIELDS', default='index_node').split(',');
-WPS_DATACART = str2bool(siteManager.get('WPS_DATACART', default='False'))
-print 'WPS endpoint: %s, datacart enabled: %s, fields: %s' % (WPS_ENDPOINT, WPS_DATACART, ','.join(WPS_FIELDS))
+WPS_FIELDS = []
+WPS_DATACART = False
 
 # FIXME
 # ESGF specific settings
-ESGF_CONFIG = siteManager.isEsgfEnabled()
-if ESGF_CONFIG:
-    ESGF_HOSTNAME = siteManager.get('ESGF_HOSTNAME', section=SECTION_ESGF, default='')
-    ESGF_DBURL = siteManager.get('ESGF_DBURL', section=SECTION_ESGF)
-    ESGF_VERSION = siteManager.get('ESGF_VERSION', section=SECTION_ESGF)
+
+ESGF_HOSTNAME = "localhost"#siteManager.get('ESGF_HOSTNAME', section=SECTION_ESGF, default='')
+ESGF_DBURL = "postgresql://dbsuper:EsgfLLNL@pcmdi8vm.llnl.gov/esgcet" #siteManager.get('ESGF_DBURL', section=SECTION_ESGF)
+ESGF_VERSION = "2" #siteManager.get('ESGF_VERSION', section=SECTION_ESGF)
 # FIXME
 
 # PID specific settings
-PID_CONFIG = siteManager.isPidEnabled()
-if PID_CONFIG:
-    PID_PREFIX = siteManager.get('PID_PREFIX', section=SECTION_PID, default='21.14101')
-    PID_MESSAGING_SERVICE_EXCHANGE = siteManager.get('PID_EXCHANGE', section=SECTION_PID, default='esgffed-exchange')
-    PID_CREDENTIALS = siteManager.get('PID_CREDENTIALS', section=SECTION_PID, default=None).split('\n')
+# PID_CONFIG = siteManager.isPidEnabled()
+# if PID_CONFIG:
+#     PID_PREFIX = siteManager.get('PID_PREFIX', section=SECTION_PID, default='21.14101')
+#     PID_MESSAGING_SERVICE_EXCHANGE = siteManager.get('PID_EXCHANGE', section=SECTION_PID, default='esgffed-exchange')
+#     PID_CREDENTIALS = siteManager.get('PID_CREDENTIALS', section=SECTION_PID, default=None).split('\n')
 
 #====================== standard django settings.py ======================
 
@@ -162,14 +155,13 @@ STATIC_ROOT = rel('static/')
 DATA_ROOT = os.path.join(MEDIA_ROOT, "data/")
 
 # custom template, media and configuration directories
-MYTEMPLATES = os.path.join(siteManager.cog_config_dir, 'mytemplates')
-MYMEDIA = os.path.join(siteManager.cog_config_dir, 'mymedia')
+MYTEMPLATES = ESGF_CONF_DIR + "mytemplates"
+MYMEDIA = ESGF_CONF_DIR + "mymedia"
 
 # project-specific configuration directories
 # must be writable by web server
 PROJECT_CONFIG_DIR = os.path.join(MEDIA_ROOT, 'config')
 
-print 'Loading custom templates from directories: %s, %s' % (MYTEMPLATES, MYMEDIA)
 
 # Make this unique, and don't share it with anybody.
 #SECRET_KEY = 'yb@$-bub$i_mrxqe5it)v%p=^(f-h&x3%uy040x))19g^iha&#'
@@ -263,10 +255,10 @@ AUTH_PROFILE_MODULE = "cog.UserProfile"
 
 
 # HTTPS support: can only send cookies via SSL connections
-if PRODUCTION_SERVER:
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    CSRF_COOKIE_HTTPONLY = True
+#if PRODUCTION_SERVER:
+    #SESSION_COOKIE_SECURE = True
+    #CSRF_COOKIE_SECURE = True
+    #CSRF_COOKIE_HTTPONLY = True
     #SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # CSS styles
