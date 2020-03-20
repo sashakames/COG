@@ -19,14 +19,19 @@ import json
 
 # Code used for react components
 
-# Get static js files list
-js_files = os.listdir(
-    "/Users/downie4/Desktop/COG_devel/COG/cog/static/cog/cog-react/js")
-css_files = os.listdir(
-    "/Users/downie4/Desktop/COG_devel/COG/cog/static/cog/cog-react/css")
+# Get directories for static files
+package_dir = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.dirname(package_dir)
+js_dir = os.path.join(static_dir,"static/cog/cog-react/js/")
+css_dir = os.path.join(static_dir,"static/cog/cog-react/css/")
+
+# Get static list
+js_files = os.listdir(js_dir)
+css_files = os.listdir(css_dir)
 js_files = list(map(lambda f: "cog/cog-react/js/" + f, js_files))
 css_files = list(map(lambda f: "cog/cog-react/css/" + f, css_files))
 
+# Separate source and map files
 map_files = []
 js_only = []
 for f in js_files:
@@ -34,7 +39,6 @@ for f in js_files:
         map_files.append(f)
     else:
         js_only.append(f)
-
 css_only = []
 for f in css_files:
     if f.endswith(".map"):
@@ -42,13 +46,14 @@ for f in css_files:
     else:
         css_only.append(f)
 
+# These files are used by Django 'subscribe.html' page, to renders front-end.
 react_files = {
     'css': css_only,
     'js': js_only,
     'map': map_files
 }
 
-# Example data that subscriptions front-end could use
+# Example data that subscriptions front-end could receive from back-end
 test_data = {
     "post_url": "/subscription/",
     "user_info": {"first":"John","last":"Doe","hobbies":"Programming.","send_emails_to":"This place."},
@@ -105,11 +110,10 @@ def temp_print(request, var_name, method="POST"):
 @login_required
 def subscribe(request):
 
-    # Contains the data from the form
+    # Contains the data from the front-end POST requests
     if request.method == "POST":
-        # Available keys from the front-end drop-downs:
-        # 'activity_ids', 'experiment_ids', 'frequencies'
-        # 'realms', 'variables', 'models'
+
+        # Get data from the POST request received from front-end
         data = json.loads(request.body)
 
         # Example obtaining data
@@ -117,7 +121,7 @@ def subscribe(request):
             for key in data.keys():
                 print("{}: {}".format(key, data[key]))
 
-                # Example response sent back to front-end
+        # Example response sent back to front-end
         test = {"status": "All good!","data": data}
         return HttpResponse(json.dumps(test),content_type='application/json')
 
