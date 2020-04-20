@@ -16,7 +16,9 @@ Each parameter has a default value.
 from cog.site_manager import siteManager
 from cog.constants import SECTION_ESGF, SECTION_PID
 
-COG_VERSION = 'v3.16.0'
+COG_VERSION = 'v4.0.0b'
+import json
+
 
 SITE_NAME = siteManager.get('SITE_NAME', default='Local CoG')
 SITE_DOMAIN = siteManager.get('SITE_DOMAIN', default='localhost:8000')
@@ -331,9 +333,15 @@ CAPTCHA_IMAGE_SIZE = (100, 40)
 
 #==== Quality Control Flags references ==================================
 
+
+QCFLAGS_URLS = { 'obs4mips_indicators': 'https://www.earthsystemcog.org/projects/obs4mips/data-indicators' }
+
+DATANODE_URL_MAP = json.load(open('/esg/config/esgf_datatnode_urls.json'))
+
 QCFLAGS_URLS = { 'obs4mips_indicators': 'https://esgf-node.llnl.gov/projects/obs4mips/data-indicators' }
 
 DATANODE_STATUS_FILE = '/esg/config/esgf_datanode_status.json'
 
 HAS_DATANODE_STATUS = os.path.isfile(DATANODE_STATUS_FILE)
+
 
