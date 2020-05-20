@@ -1,15 +1,16 @@
-from django.core.urlresolvers import reverse
+from django.conf import settings
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden, HttpResponseServerError
 from django.shortcuts import render
 from django.template import RequestContext
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from cog.utils import getJson
-from urlparse import urlparse
+from urllib.parse import urlparse
 from cog.constants import SECTION_GLOBUS
 from cog.site_manager import siteManager
 import datetime
-from constants import GLOBUS_NOT_ENABLED_MESSAGE
+from .constants import GLOBUS_NOT_ENABLED_MESSAGE
 from functools import wraps
 import os
 import re
@@ -40,7 +41,8 @@ if siteManager.isGlobusEnabled():
 	from base64 import urlsafe_b64encode
 	from oauth2client import client as oauth_client
 	from cog.plugins.globus.transfer import activateEndpoint, submitTransfer, generateGlobusDownloadScript
-	from globusonline.transfer.api_client import TransferAPIClient
+	from globus_sdk.transfer import TransferClient
+	from globus_sdk import AccessTokenAuthorizer
 
 	client_id = siteManager.get('OAUTH_CLIENT_ID', section=SECTION_GLOBUS)
 	client_secret = siteManager.get('OAUTH_CLIENT_SECRET', section=SECTION_GLOBUS)
@@ -59,8 +61,8 @@ def discover_myproxy(openid):
 
 
 def establishFlow(request):
-	basic_auth_str = urlsafe_b64encode("{}:{}".format(client_id, client_secret))
-	auth_header = "Basic " + basic_auth_str
+	basic_auth_str = urlsafe_b64encode('{}:{}'.format(client_id, client_secret).encode())
+	auth_header = b'Basic ' + basic_auth_str
 	return oauth_client.OAuth2WebServerFlow(
 		client_id = client_id,
 		authorization_header = auth_header,
@@ -127,8 +129,8 @@ def download(request):
 			params.append(("distrib", "false"))
 
 			
-		url = "http://"+index_node+"/esg-search/search?"+urllib.urlencode(params)
-		print 'Searching for files at URL: %s' % url
+		url = "http://"+index_node+"/esg-search/search?"+urllib.parse.urlencode(params)
+		print('Searching for files at URL: %s' % url)
 		jobj = getJson(url)
 		
 		# parse response for GridFTP URls
@@ -152,13 +154,13 @@ def download(request):
 							download_map[gendpoint_name] = [] # insert empty list of paths
 						download_map[gendpoint_name].append(path)
 				else:
-					print 'The file is not accessible through Globus'
+					print('The file is not accessible through Globus')
 		else:
 			return HttpResponseServerError("Error querying for files URL")
 						
 	# store map in session
 	request.session[GLOBUS_DOWNLOAD_MAP] = download_map
-	print 'Stored Globus Download Map=%s at session scope' % download_map
+	print('Stored Globus Download Map=%s at session scope' % download_map)
 	
 	# redirect after post (to display page)
 	return HttpResponseRedirect( reverse('globus_transfer') )
@@ -185,8 +187,8 @@ def transfer(request):
 				   # ('lock', 'ep'), # do NOT allow the user to change their endpoint
 				   ('action', request.build_absolute_uri(reverse("globus_oauth")) ), # redirect to CoG Oauth URL
 				 ]
-		globus_url = GLOBUS_SELECT_DESTINATION_URL + "?" + urllib.urlencode(params)
-		print "Redirecting to: %s" % globus_url
+		globus_url = GLOBUS_SELECT_DESTINATION_URL + "?" + urllib.parse.urlencode(params)
+		print("Redirecting to: %s" % globus_url)
 		return HttpResponseRedirect(globus_url)
 		# replacement URL for localhost development
 		#return HttpResponseRedirect( request.build_absolute_uri(reverse("globus_oauth")) ) # FIXME
@@ -201,11 +203,11 @@ def oauth(request):
 	# /globus/oauth/?label=&verify_checksum=on&submitForm=&folder[0]=tmp&endpoint=cinquiniluca#mymac&path=/~/&ep=GC&lock=ep&method=get&folderlimit=1&action=http://localhost:8000/globus/oauth/
 	request.session[TARGET_ENDPOINT] = getQueryDict(request).get('endpoint','#')
 	request.session[TARGET_FOLDER] = getQueryDict(request).get('path','/~/') + getQueryDict(request).get('folder[0]', '')  # default value: user home directory
-	print 'User selected destionation endpoint:%s, path:%s, folder:%s' % (request.session[TARGET_ENDPOINT], getQueryDict(request).get('path','/~/'), getQueryDict(request).get('folder[0]', ''))
+	print('User selected destionation endpoint:%s, path:%s, folder:%s' % (request.session[TARGET_ENDPOINT], getQueryDict(request).get('path','/~/'), getQueryDict(request).get('folder[0]', '')))
 
 	# Redirect the user to Globus OAuth server to get an authorization code if the user approves the access request.
 	globus_authorize_url = establishFlow(request).step1_get_authorize_url()
-	print "Redirecting to: %s" % globus_authorize_url
+	print("Redirecting to: %s" % globus_authorize_url)
 	return HttpResponseRedirect(globus_authorize_url)
 
 
@@ -261,29 +263,26 @@ def submit(request):
 	target_folder = request.session.get(TARGET_FOLDER)
 
 	#print 'Downloading files=%s' % download_map.items()
-	print 'User selected destionation endpoint:%s, folder: %s' % (target_endpoint, target_folder)
+	print('User selected destionation endpoint:%s, folder: %s' % (target_endpoint, target_folder))
 
-	api_client = TransferAPIClient(username, goauth=access_token)
+	token_authorizer = AccessTokenAuthorizer(access_token)
+	transfer_client = TransferClient(token_authorizer)
 	# loop over source endpoints and autoactivate them
 	# if the autoactivation fails, redirect to a form asking for a password
-	activateEndpoint(api_client, target_endpoint)
+	activateEndpoint(transfer_client, target_endpoint)
 	for source_endpoint, source_files in download_map.items():
-		status, message = activateEndpoint(
-			api_client, source_endpoint,
-			myproxy_server=myproxy_server, username=esgf_username, password=esgf_password)
+		status, message = activateEndpoint(transfer_client, source_endpoint, myproxy_server=myproxy_server, username=esgf_username, password=esgf_password)
 		if not status:
-                        print hostname
-			return render(request,
-                          'cog/globus/password.html',
-                          { 'openid': openid, 'username': hostname=='ceda.ac.uk', 'message': message })
+			print(hostname)
+			return render(request, 'cog/globus/password.html', { 'openid': openid, 'username': hostname=='ceda.ac.uk', 'message': message })
 
 	# loop over source endpoints, submit one transfer for each source endpoint
 	task_ids = []  # list of submitted task ids
-	for source_endpoint, source_files in download_map.items():
+	for source_endpoint, source_files in list(download_map.items()):
 			
 		# submit transfer request
 		task_id = submitTransfer(
-			api_client, source_endpoint, source_files,
+			transfer_client, source_endpoint, source_files,
 			target_endpoint, target_folder)
 		task_ids.append(task_id)
 	
