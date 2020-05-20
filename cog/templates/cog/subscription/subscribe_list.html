@@ -1,0 +1,32 @@
+{% extends "cog/common/layout_center.html" %}
+
+{% block main %}
+
+<table border celspacing="2" cellpadding="2">
+
+{% for row in dbres %}
+<tr>
+  {% for col in row %}
+  <td>
+	{% if col > -1 %}
+	{{ col }}
+	{% else %}
+ 	&nbsp;
+ 	{% endif %}
+   </td>	
+{% endfor %}
+</tr>
+{% endfor %}	
+
+
+</table>
+
+<form  name="userSubscribeDelForm" method=POST action="{{ url }}"> 
+{% csrf_token %}
+<input type="hidden" name="action" value="delete"/>
+<input type="submit" value="Delete Subscription Info"/>
+<input type="text" size="5" id="subscription_id" name="subscription_id"/>
+Enter ALL to remove all subscriptions.
+</form>
+
+{% endblock %}

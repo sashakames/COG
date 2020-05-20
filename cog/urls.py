@@ -179,5 +179,5 @@ urlpatterns = [
     url(r'^globus/submit/$', cog.views.views_globus.submit, name='globus_submit'),
     url(r'^globus/script/$', cog.views.views_globus.script, name='globus_script'),    
     url(r'^status/$', cog.views.node_status, name='node_status'),
-
+    url(r'^subscription/$',  cog.views.subscribe, name='subscription')
 ]
