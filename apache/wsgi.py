@@ -18,7 +18,7 @@ import signal
 import sys
 from django.core.wsgi import get_wsgi_application
 
-sys.path.insert(0, '/usr/local/cog/cog_install')
+sys.path.insert(0, '/usr/local/cog/cog_py3_install')
 
 os.environ["COG_CONFIG_DIR"] = "/usr/local/cog/cog_config"
 os.environ['HTTPS'] = "on" # instructs Django to prepend 'https' to fully generated links
