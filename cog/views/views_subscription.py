@@ -39,8 +39,10 @@ test_data = {
 }
 
 test_results = {
- "results" : [ {"subs_id" : 1 , "activity_id" : ["CMIP", "ScenarioMIP"],  "experiment_id" : ["historical", "ssp226"]} 
- {"subs_id" : 2 , "variable_id" : ["tas", "pr"],  "experiment_id" : ["piControl"] } ]
+ "results" : [ {"subs_id" : 1 , "activity_id" : ["CMIP", "ScenarioMIP"],  "experiment_id" : ["historical", "ssp226"],
+  "period" : "daily", "timestamp" : "2020-06-08T09:49:25Z"},  
+ {"subs_id" : 2 , "variable_id" : ["tas", "pr"],  "experiment_id" : ["piControl"] , 
+ "period" : "daily", "name" : "temp-precip", "timestamp" : "2020-06-08T10:00:13Z" } ]
   
 }
 
