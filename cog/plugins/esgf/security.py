@@ -339,14 +339,16 @@ class ESGFDatabaseManager():
     def unpack(self, x):
 
         for y in x:
-            if y.id in self.ret_struct:
-                val = ret_struct[y.id]
-                val[y.keyname]
+
+            if type(y) is ESGFSubscribers:
+                 if not id in self.ret_struct:
+                     d = {}
+                     d['period'] = y.period
+                     d['name'] = y.name
+                     self.ret_struct[y.id] = d
             else:
-                d = {}
-                d[y.keyname] = y.valuename.split(',')
-                d['period'] = y.period
-                self.ret_struct[y.id] = d
+                val = self.ret_struct[y.subscribers_id]
+                val[y.keyname] = y.valuename
 
 
     def lookupUserSubscriptions(self, user):
