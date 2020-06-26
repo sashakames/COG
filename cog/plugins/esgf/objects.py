@@ -87,7 +87,7 @@ class ESGFSubscribers(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('esgf_security.user.id'))
     period = Column(Integer)  # ForeignKey (Q: do we want to define this?)
-
+    name  = Column(String)
     terms = relationship("ESGFTerms", back_populates="subscriber", passive_deletes=True, cascade='all, delete, delete-orphan')    
 
 class ESGFTerms(Base):

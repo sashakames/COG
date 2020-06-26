@@ -25,7 +25,7 @@ def lookup_and_render(request):
 		print traceback.print_exc()
 		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond) })
 	
-	return render(request, 'cog/subscription/subscribe_list.html', { 'dbres' : dbres } )
+	return render(request, 'cog/subscription/subscribe_list.html', { 'dbres' : str(dbres) } )
 
 def delete_subscription(request):
 

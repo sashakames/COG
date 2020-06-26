@@ -27,7 +27,7 @@ class ESGFDatabaseManager():
         from the configuration parameters contained in cog_settings.cfg'''
 
         #if os.getenv('DJANGO_SETTINGS_MODULE', None) and settings.ESGF_CONFIG:
-        self.id_save = -1;
+        self.ret_struct = {};
 
         if settings.ESGF_CONFIG:
 
@@ -326,25 +326,28 @@ class ESGFDatabaseManager():
                     session.commit()
                     session.close()
                     return    
+    def mkarr(self):
 
+        ret = []
+        for k in self.ret_struct:
+
+            val = self.ret_struct[k]
+            val['id'] = k
+            ret.append(val)
+        return ret
 
     def unpack(self, x):
 
-        res = []
-        for i, y in enumerate(x):
-
-#            print self.id_save
-
-            if i == 0:
-                if y.id != self.id_save:
-                    res.append(y.id)
-                    self.id_save = y.id
-                else:
-                    res.append(-1)
+        for y in x:
+            if y.id in self.ret_struct:
+                val = ret_struct[y.id]
+                val[y.keyname]
             else:
-                res.append(y.keyname)
-                res.append(y.valuename)
-        return res
+                d = {}
+                d[y.keyname] = y.valuename.split(',')
+                d['period'] = y.period
+                self.ret_struct[y.id] = d
+
 
     def lookupUserSubscriptions(self, user):
          for openid in user.profile.openids():
@@ -359,10 +362,10 @@ class ESGFDatabaseManager():
 
                     subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.user_id==esgfUser.id).join(ESGFTerms)
                     session.close()
+                    self.ret_struct = {}
+                    for x in subs:
+                        self.unpack(x)
 
-                    self.id_save = -1;
-                    res = [self.unpack(x) for x in subs]
-        
-                    return res
+                    return self.mkarr()
 
 esgfDatabaseManager = ESGFDatabaseManager()
