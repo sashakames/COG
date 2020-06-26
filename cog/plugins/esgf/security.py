@@ -27,7 +27,7 @@ class ESGFDatabaseManager():
         from the configuration parameters contained in cog_settings.cfg'''
 
         #if os.getenv('DJANGO_SETTINGS_MODULE', None) and settings.ESGF_CONFIG:
-        self.id_save = -1;
+        self.ret_struct = {};
 
         if settings.ESGF_CONFIG:
 
@@ -326,25 +326,32 @@ class ESGFDatabaseManager():
                     session.commit()
                     session.close()
                     return    
+    def mkarr(self):
 
+        ret = []
+        for k in self.ret_struct:
+
+            val = self.ret_struct[k]
+            val['id'] = k
+            ret.append(val)
+        return ret
 
     def unpack(self, x):
 
-        res = []
-        for i, y in enumerate(x):
+        for y in x:
 
-#            print self.id_save
-
-            if i == 0:
-                if y.id != self.id_save:
-                    res.append(y.id)
-                    self.id_save = y.id
-                else:
-                    res.append(-1)
+            if type(y) is ESGFSubscribers:
+                if not y.id in self.ret_struct:
+                     d = {}
+                     d['period'] = y.period
+                     d['name'] = y.name
+                     self.ret_struct[y.id] = d
             else:
-                res.append(y.keyname)
-                res.append(y.valuename)
-        return res
+#                print(y.subscribers_id)
+                val = self.ret_struct[y.subscribers_id]
+                val[y.keyname] = y.valuename
+#                print(str(val))
+                self.ret_struct[y.subscribers_id] = val
 
     def lookupUserSubscriptions(self, user):
          for openid in user.profile.openids():
@@ -359,10 +366,11 @@ class ESGFDatabaseManager():
 
                     subs = session.query(ESGFSubscribers,ESGFTerms).filter(ESGFSubscribers.user_id==esgfUser.id).join(ESGFTerms)
                     session.close()
+                    self.ret_struct = {}
+                    for x in subs:
+                        self.unpack(x)
 
-                    self.id_save = -1;
-                    res = [self.unpack(x) for x in subs]
-        
-                    return res
+#                    print(str(self.ret_struct))
+                    return self.mkarr()
 
 esgfDatabaseManager = ESGFDatabaseManager()

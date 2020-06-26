@@ -25,26 +25,35 @@ SECRET_KEY = 'ds4sjjj(76K=={%$HHH1@#b:l;'
 # for SQLLite back-end
 DATABASE_PATH = ESGF_CONF_DIR + "django.data"
 # for postgres back-end
-DATABASE_NAME = "cogdb"
-DATABASE_USER = "dbsuper" #siteManager.get('DATABASE_USER')
-DATABASE_PASSWORD = "EsgfLLNL" #siteManager.get('DATABASE_PASSWORD')
-DATABASE_HOST = "pcmdi8vm.llnl.gov" #siteManager.get('DATABASE_HOST', default='localhost')
-DATABASE_PORT = "5432" #siteManager.get('DATABASE_PORT', default=5432)
-MY_PROJECTS_REFRESH_SECONDS = 3600
-PWD_EXPIRATION_DAYS = 0 # 0: no expiration
-IDP_REDIRECT = None #siteManager.get('IDP_REDIRECT', default=None)
-VISUS_SITE = None
-HOME_PROJECT = 'TestProject'
-MEDIA_ROOT = ESGF_CONF_DIR + 'site_media'
-DEFAULT_SEARCH_URL = "http://pcmdi8vm.llnl.gov/esg-search/search/"
-DJANGO_DATABASE = "postgres"
 
-DEBUG = True
-ALLOWED_HOSTS = ['localhost'] #siteManager.get('ALLOWED_HOSTS', default=SITE_DOMAIN).split(",")
-IDP_WHITELIST = ESGF_CONF_DIR + "esgf_idp.xml" #siteManager.get('IDP_WHITELIST', default=None)
-KNOWN_PROVIDERS = ESGF_CONF_DIR + "esgf_known_providers.xml" #siteManager.get('KNOWN_PROVIDERS', default=None)
-PEER_NODES = ESGF_CONF_DIR + "esgf_cogs.xml"#siteManager.get('PEER_NODES', default=None)
-USE_CAPTCHA = False
+DATABASE_NAME = siteManager.get('DATABASE_NAME', default='cogdb')
+DATABASE_USER = siteManager.get('DATABASE_USER')
+DATABASE_PASSWORD = siteManager.get('DATABASE_PASSWORD')
+DATABASE_HOST = siteManager.get('DATABASE_HOST', default='localhost')
+DATABASE_PORT = siteManager.get('DATABASE_PORT', default=5432)
+MY_PROJECTS_REFRESH_SECONDS = int(siteManager.get('MY_PROJECTS_REFRESH_SECONDS', default=3600))  # one hour
+PWD_EXPIRATION_DAYS = int(siteManager.get('PWD_EXPIRATION_DAYS', default=0))  # 0: no expiration
+IDP_REDIRECT = siteManager.get('IDP_REDIRECT', default=None)
+VISUS_SITE = siteManager.get('VISUS_SITE', default=None)
+HOME_PROJECT = siteManager.get('HOME_PROJECT', default='cog')
+MEDIA_ROOT = siteManager.get('MEDIA_ROOT', default="%s/site_media" % siteManager.cog_config_dir)
+DEFAULT_SEARCH_URL = siteManager.get('DEFAULT_SEARCH_URL', default='http://hydra.fsl.noaa.gov/esg-search/search/')
+DJANGO_DATABASE = siteManager.get('DJANGO_DATABASE', default='sqllite3')
+if siteManager.get('DEBUG', default='False').lower() == 'true':
+    DEBUG = True
+else:
+    DEBUG = False
+ALLOWED_HOSTS = ['esgf-dev2.llnl.gov', 'localhost']
+
+print('Using DEBUG=%s ALLOWED_HOSTS=%s' % (DEBUG, ALLOWED_HOSTS))
+IDP_WHITELIST = siteManager.get('IDP_WHITELIST', default=None)
+print('Using IdP whitelist(s): %s' % IDP_WHITELIST)
+KNOWN_PROVIDERS = siteManager.get('KNOWN_PROVIDERS', default=None)
+print('Using list of known Identity Providers: %s' % KNOWN_PROVIDERS)
+PEER_NODES = siteManager.get('PEER_NODES', default=None)
+USE_CAPTCHA = str2bool(siteManager.get('USE_CAPTCHA', default='True'))
+print('Using list of ESGF/CoG peer nodes from: %s' % PEER_NODES)
+
 # DEVELOPMENT/PRODUCTION server switch
 PRODUCTION_SERVER = True
 

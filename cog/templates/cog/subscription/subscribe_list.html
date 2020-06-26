@@ -2,24 +2,8 @@
 
 {% block main %}
 
-<table border celspacing="2" cellpadding="2">
+{{ dbres }}
 
-{% for row in dbres %}
-<tr>
-  {% for col in row %}
-  <td>
-	{% if col > -1 %}
-	{{ col }}
-	{% else %}
- 	&nbsp;
- 	{% endif %}
-   </td>	
-{% endfor %}
-</tr>
-{% endfor %}	
-
-
-</table>
 
 <form  name="userSubscribeDelForm" method=POST action="{{ url }}"> 
 {% csrf_token %}

@@ -1,5 +1,3 @@
-
-from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden, HttpResponseServerError
 from django.shortcuts import render
@@ -66,6 +64,7 @@ react_props = test_data
 
 def lookup_and_render(request):
 
+
     try:
         dbres = esgfDatabaseManager.lookupUserSubscriptions(request.user)
     except Exception as e:
@@ -73,7 +72,7 @@ def lookup_and_render(request):
         error_cond = str(e)
         print(traceback.print_exc())
         return render(request, 'cog/subscription/subscribe_done.html', {'email': request.user.email,  'error': "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond)})
-
+	
     return render(request, 'cog/subscription/subscribe_list.html', {'dbres': dbres})
 
 
