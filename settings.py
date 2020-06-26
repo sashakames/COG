@@ -43,7 +43,8 @@ if siteManager.get('DEBUG', default='False').lower() == 'true':
     DEBUG = True
 else:
     DEBUG = False
-ALLOWED_HOSTS = siteManager.get('ALLOWED_HOSTS', default=SITE_DOMAIN).split(",")
+ALLOWED_HOSTS = ['esgf-dev2.llnl.gov', 'localhost']
+
 print('Using DEBUG=%s ALLOWED_HOSTS=%s' % (DEBUG, ALLOWED_HOSTS))
 IDP_WHITELIST = siteManager.get('IDP_WHITELIST', default=None)
 print('Using IdP whitelist(s): %s' % IDP_WHITELIST)
