@@ -1,5 +1,3 @@
-
-from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden, HttpResponseServerError
 from django.shortcuts import render
@@ -22,8 +20,8 @@ def lookup_and_render(request):
 	except Exception as e:
 		# log error
 		error_cond = str(e)
-		print traceback.print_exc()
-		return render(request, 'cog/subscription/subscribe_done.html', { 'email' : email ,  'error' : "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond) })
+		print(traceback.print_exc())
+		return render(request, 'cog/subscription/subscribe_done.html', {  'error' : "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond) })
 	
 	return render(request, 'cog/subscription/subscribe_list.html', { 'dbres' : str(dbres) } )
 
