@@ -2,10 +2,9 @@ import os
 import logging
 import re
 from cog.utils import str2bool
+import json
 
 rel = lambda *x: os.path.join(os.path.abspath(os.path.dirname(__file__)), *x)
-
-ESGF_CONF_DIR = os.getenv('ESGF_CONF_DIR', rel(''))
 
 ''' 
 SITE SPECIFIC CONFIGURATION
@@ -13,19 +12,20 @@ These parameters are read from file 'cog_settings.cfg'
 located in directory COG_CONFIG_DIR (or by default '/usr/local/cog/cog_config').
 Each parameter has a default value.
 '''
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
-from cog.constants import SECTION_ESGF, SECTION_PID
-ESGF_CONFIG = True
-SITE_NAME = "Local CoG" 
-SITE_DOMAIN = "localhost:8000"
-TIME_ZONE = 'America/Denver'
-COG_MAILING_LIST = 'cog_info@list.woc.noaa.gov'
-SECRET_KEY = 'ds4sjjj(76K=={%$HHH1@#b:l;'
-# for SQLLite back-end
-DATABASE_PATH = ESGF_CONF_DIR + "django.data"
-# for postgres back-end
 
+from cog.site_manager import siteManager
+from cog.constants import SECTION_ESGF, SECTION_PID
+
+COG_VERSION = 'v3.16.0'
+
+SITE_NAME = siteManager.get('SITE_NAME', default='Local CoG')
+SITE_DOMAIN = siteManager.get('SITE_DOMAIN', default='localhost:8000')
+TIME_ZONE = siteManager.get('TIME_ZONE', default='America/Denver')
+COG_MAILING_LIST = siteManager.get('COG_MAILING_LIST', default='cog_info@list.woc.noaa.gov')
+SECRET_KEY = siteManager.get('SECRET_KEY', default='ds4sjjj(76K=={%$HHH1@#b:l;')
+# for SQLLite back-end
+DATABASE_PATH = siteManager.get('DATABASE_PATH', default="%s/django.data" % siteManager.cog_config_dir)
+# for postgres back-end
 DATABASE_NAME = siteManager.get('DATABASE_NAME', default='cogdb')
 DATABASE_USER = siteManager.get('DATABASE_USER')
 DATABASE_PASSWORD = siteManager.get('DATABASE_PASSWORD')
@@ -53,29 +53,31 @@ print('Using list of known Identity Providers: %s' % KNOWN_PROVIDERS)
 PEER_NODES = siteManager.get('PEER_NODES', default=None)
 USE_CAPTCHA = str2bool(siteManager.get('USE_CAPTCHA', default='True'))
 print('Using list of ESGF/CoG peer nodes from: %s' % PEER_NODES)
-
 # DEVELOPMENT/PRODUCTION server switch
-PRODUCTION_SERVER = True
+PRODUCTION_SERVER = str2bool(siteManager.get('PRODUCTION_SERVER', default='False'))
+print('Production server flag=%s' % PRODUCTION_SERVER)
 
-WPS_ENDPOINT = None
+WPS_ENDPOINT = siteManager.get('WPS_ENDPOINT', default=None);
 # Fields that will be added to the query string
-WPS_FIELDS = []
-WPS_DATACART = False
+WPS_FIELDS = siteManager.get('WPS_FIELDS', default='index_node').split(',');
+WPS_DATACART = str2bool(siteManager.get('WPS_DATACART', default='False'))
+print('WPS endpoint: %s, datacart enabled: %s, fields: %s' % (WPS_ENDPOINT, WPS_DATACART, ','.join(WPS_FIELDS)))
 
 # FIXME
 # ESGF specific settings
-
-ESGF_HOSTNAME = "localhost"#siteManager.get('ESGF_HOSTNAME', section=SECTION_ESGF, default='')
-ESGF_DBURL = "postgresql://dbsuper:EsgfLLNL@pcmdi8vm.llnl.gov/esgcet" #siteManager.get('ESGF_DBURL', section=SECTION_ESGF)
-ESGF_VERSION = "2" #siteManager.get('ESGF_VERSION', section=SECTION_ESGF)
+ESGF_CONFIG = siteManager.isEsgfEnabled()
+if ESGF_CONFIG:
+    ESGF_HOSTNAME = siteManager.get('ESGF_HOSTNAME', section=SECTION_ESGF, default='')
+    ESGF_DBURL = siteManager.get('ESGF_DBURL', section=SECTION_ESGF)
+    ESGF_VERSION = siteManager.get('ESGF_VERSION', section=SECTION_ESGF)
 # FIXME
 
 # PID specific settings
-# PID_CONFIG = siteManager.isPidEnabled()
-# if PID_CONFIG:
-#     PID_PREFIX = siteManager.get('PID_PREFIX', section=SECTION_PID, default='21.14101')
-#     PID_MESSAGING_SERVICE_EXCHANGE = siteManager.get('PID_EXCHANGE', section=SECTION_PID, default='esgffed-exchange')
-#     PID_CREDENTIALS = siteManager.get('PID_CREDENTIALS', section=SECTION_PID, default=None).split('\n')
+PID_CONFIG = siteManager.isPidEnabled()
+if PID_CONFIG:
+    PID_PREFIX = siteManager.get('PID_PREFIX', section=SECTION_PID, default='21.14101')
+    PID_MESSAGING_SERVICE_EXCHANGE = siteManager.get('PID_EXCHANGE', section=SECTION_PID, default='esgffed-exchange')
+    PID_CREDENTIALS = siteManager.get('PID_CREDENTIALS', section=SECTION_PID, default=None).split('\n')
 
 #====================== standard django settings.py ======================
 
@@ -164,13 +166,14 @@ STATIC_ROOT = rel('static/')
 DATA_ROOT = os.path.join(MEDIA_ROOT, "data/")
 
 # custom template, media and configuration directories
-MYTEMPLATES = ESGF_CONF_DIR + "mytemplates"
-MYMEDIA = ESGF_CONF_DIR + "mymedia"
+MYTEMPLATES = os.path.join(siteManager.cog_config_dir, 'mytemplates')
+MYMEDIA = os.path.join(siteManager.cog_config_dir, 'mymedia')
 
 # project-specific configuration directories
 # must be writable by web server
 PROJECT_CONFIG_DIR = os.path.join(MEDIA_ROOT, 'config')
 
+print('Loading custom templates from directories: %s, %s' % (MYTEMPLATES, MYMEDIA))
 
 # Make this unique, and don't share it with anybody.
 #SECRET_KEY = 'yb@$-bub$i_mrxqe5it)v%p=^(f-h&x3%uy040x))19g^iha&#'
@@ -202,7 +205,7 @@ TEMPLATES = [
     },
 ]
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -264,10 +267,10 @@ AUTH_PROFILE_MODULE = "cog.UserProfile"
 
 
 # HTTPS support: can only send cookies via SSL connections
-#if PRODUCTION_SERVER:
-    #SESSION_COOKIE_SECURE = True
-    #CSRF_COOKIE_SECURE = True
-    #CSRF_COOKIE_HTTPONLY = True
+if PRODUCTION_SERVER:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
     #SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # CSS styles
@@ -329,4 +332,9 @@ CAPTCHA_IMAGE_SIZE = (100, 40)
 
 #==== Quality Control Flags references ==================================
 
-QCFLAGS_URLS = { 'obs4mips_indicators': 'https://www.earthsystemcog.org/projects/obs4mips/data-indicators' }
+QCFLAGS_URLS = { 'obs4mips_indicators': 'https://esgf-node.llnl.gov/projects/obs4mips/data-indicators' }
+
+DATANODE_STATUS_FILE = '/esg/config/esgf_datanode_status.json'
+
+HAS_DATANODE_STATUS = os.path.isfile(DATANODE_STATUS_FILE)
+
