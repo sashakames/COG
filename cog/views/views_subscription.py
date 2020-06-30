@@ -147,19 +147,16 @@ def subscribe(request):
 
         # Get data from the POST request received from front-end
         data = json.loads(request.body)
+        print(data) # Show data for debugging
 
         # Example obtaining data
-        if data and data.action:
-            if data.action == "subscribe":
+        if data and data['action']:
+            if data['action'] == "subscribe":
                 print("Subscribing to data.")
-                print(data.payload)
-            elif data.action == "unsubscribe":
+                print(data['payload'])
+            elif data['action'] == "unsubscribe":
                 print("Unsubscribing..")
-                print(data.payload)
-            else:
-                print(data)
-        else:
-            print(data)
+                print(data['payload'])
 
         # Example response sent back to front-end
         test = {"status": "All good!", "data": data}
