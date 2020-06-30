@@ -1,5 +1,10 @@
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden, HttpResponseServerError
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+    HttpResponseForbidden,
+    HttpResponseServerError,
+)
 from django.shortcuts import render
 from django.template import RequestContext
 import json
@@ -20,8 +25,8 @@ import json
 # Get directories for static files
 package_dir = os.path.dirname(os.path.abspath(__file__))
 static_dir = os.path.dirname(package_dir)
-js_dir = os.path.join(static_dir,"static/cog/cog-react/js/")
-css_dir = os.path.join(static_dir,"static/cog/cog-react/css/")
+js_dir = os.path.join(static_dir, "static/cog/cog-react/js/")
+css_dir = os.path.join(static_dir, "static/cog/cog-react/css/")
 
 # Get static list
 js_files = os.listdir(js_dir)
@@ -45,25 +50,35 @@ for f in css_files:
         css_only.append(f)
 
 # These files are used by Django 'subscribe.html' page, to renders front-end.
-react_files = {
-    'css': css_only,
-    'js': js_only,
-    'map': map_files
-}
+react_files = {"css": css_only, "js": js_only, "map": map_files}
 
 # Example data that subscriptions front-end could receive from back-end
 test_data = {
     "post_url": "/subscription/",
-    "user_info": {"first":"John","last":"Doe","hobbies":"Programming.","send_emails_to":"This place."},
-    "activities": {"method":["email"],"weekly":["CMIP"],"monthly":["CMIP6"]},
-    "experiments": {"method":["popup"],"daily":["test", "experiment 2"],"weekly":["test2"]},
+    "saved_subs": [
+        {
+            "id": 1,
+            "timestamp": 12978234,
+            "period": "bi-weekly",
+            "activities": ["CMIP", "CORDEX"],
+            "variables": ["clt"],
+        },
+        {
+            "id": 2,
+            "timestamp": 9768234,
+            "name": "Test Loaded",
+            "period": "monthly",
+            "varliables": ["clt", "ts"],
+            "experiments": ["amip-TIP"],
+        },
+    ],
 }
 
 # To pass data to front-end, use react-props and pass it a dictionary with key-value pairs
 react_props = test_data
 
-def lookup_and_render(request):
 
+def lookup_and_render(request):
 
     try:
         dbres = esgfDatabaseManager.lookupUserSubscriptions(request.user)
@@ -71,25 +86,42 @@ def lookup_and_render(request):
         # log error
         error_cond = str(e)
         print(traceback.print_exc())
-        return render(request, 'cog/subscription/subscribe_done.html', {'email': request.user.email,  'error': "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond)})
-	
-    return render(request, 'cog/subscription/subscribe_list.html', {'dbres': dbres})
+        return render(
+            request,
+            "cog/subscription/subscribe_done.html",
+            {
+                "email": request.user.email,
+                "error": "An Error Has Occurred While Processing Your Request. <p> {}".format(
+                    error_cond
+                ),
+            },
+        )
+
+    return render(request, "cog/subscription/subscribe_list.html", {"dbres": dbres})
 
 
 def delete_subscription(request):
-    res = request.POST.get('subscription_id', None)
+    res = request.POST.get("subscription_id", None)
     try:
         if res == "ALL":
-            dbres = esgfDatabaseManager.deleteAllUserSubscriptions(
-                request.user)
+            dbres = esgfDatabaseManager.deleteAllUserSubscriptions(request.user)
         else:
             dbres = esgfDatabaseManager.deleteUserSubscriptionById(res)
     except Exception as e:
         # log error
         error_cond = str(e)
-        return render(request, 'cog/subscription/subscribe_done.html', {'error': "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond)})
+        return render(
+            request,
+            "cog/subscription/subscribe_done.html",
+            {
+                "error": "An Error Has Occurred While Processing Your Request. <p> {}".format(
+                    error_cond
+                )
+            },
+        )
 
-    return render(request, 'cog/subscription/subs_delete_done.html')
+    return render(request, "cog/subscription/subs_delete_done.html")
+
 
 def temp_print(request, var_name, method="POST"):
     print(request.POST)
@@ -97,14 +129,15 @@ def temp_print(request, var_name, method="POST"):
         data = json.loads(request.body)
     else:
         data = request.GET.copy()
-    
-    if(data):
+
+    if data:
         try:
             print("{} {}: {}".format(method, var_name, data[var_name]))
         except KeyError:
             print("Key error: {}".format(data))
     else:
         print("{} {}: None".format(method, var_name))
+
 
 @login_required
 def subscribe(request):
@@ -116,25 +149,41 @@ def subscribe(request):
         data = json.loads(request.body)
 
         # Example obtaining data
-        if data:
-            for key in data.keys():
-                print("{}: {}".format(key, data[key]))
+        if data and data.action:
+            if data.action == "subscribe":
+                print("Subscribing to data.")
+                print(data.payload)
+            elif data.action == "unsubscribe":
+                print("Unsubscribing..")
+                print(data.payload)
+            else:
+                print(data)
+        else:
+            print(data)
 
         # Example response sent back to front-end
-        test = {"status": "All good!","data": data}
-        return HttpResponse(json.dumps(test),content_type='application/json')
+        test = {"status": "All good!", "data": data}
+        return HttpResponse(json.dumps(test), content_type="application/json")
 
-    if request.method == 'GET':
-        if request.GET.get('action') == "modify":
+    if request.method == "GET":
+        if request.GET.get("action") == "modify":
             return lookup_and_render(request)
         else:
-            return render(request, 'cog/subscription/subscribe.html', {'react_files': react_files, 'react_props': react_props})
-    elif request.POST.get('action') == "delete":
+            return render(
+                request,
+                "cog/subscription/subscribe.html",
+                {"react_files": react_files, "react_props": react_props},
+            )
+    elif request.POST.get("action") == "delete":
         return delete_subscription(request)
     else:
         period = request.POST.get("period", -1)
         if period == -1:
-            return render(request, 'cog/subscription/subscribe_done.html', {'email': request.user.email,  'error': "Invalid period"})
+            return render(
+                request,
+                "cog/subscription/subscribe_done.html",
+                {"email": request.user.email, "error": "Invalid period"},
+            )
 
         subs_count = 0
         error_cond = ""
@@ -142,11 +191,11 @@ def subscribe(request):
         valarr = []
         for i in range(1, 4):
 
-            keystr = 'subscription_key{}'.format(i)
-            keyres = request.POST.get(keystr, '')
+            keystr = "subscription_key{}".format(i)
+            keyres = request.POST.get(keystr, "")
 
-            valstr = 'subscription_value{}'.format(i)
-            valres = request.POST.get(valstr, '')
+            valstr = "subscription_value{}".format(i)
+            valres = request.POST.get(valstr, "")
 
             if len(keyres) < 2 or len(valres) < 2:
                 continue
@@ -161,13 +210,32 @@ def subscribe(request):
             try:
 
                 esgfDatabaseManager.addUserSubscription(
-                    request.user, period, keyarr, valarr)
+                    request.user, period, keyarr, valarr
+                )
 
             except Exception as e:
                 # log error
                 error_cond = str(e)
-                return render(request, 'cog/subscription/subscribe_done.html', {'email': request.user.email,  'error': "An Error Has Occurred While Processing Your Request. <p> {}".format(error_cond), })
+                return render(
+                    request,
+                    "cog/subscription/subscribe_done.html",
+                    {
+                        "email": request.user.email,
+                        "error": "An Error Has Occurred While Processing Your Request. <p> {}".format(
+                            error_cond
+                        ),
+                    },
+                )
 
-            return render(request, 'cog/subscription/subscribe_done.html', {'email': request.user.email, 'count': subs_count})
+            return render(
+                request,
+                "cog/subscription/subscribe_done.html",
+                {"email": request.user.email, "count": subs_count},
+            )
         else:
-            return render(request, 'cog/subscription/subscribe.html', {'react_files': react_files, 'react_props': react_props})
+            return render(
+                request,
+                "cog/subscription/subscribe.html",
+                {"react_files": react_files, "react_props": react_props},
+            )
+
