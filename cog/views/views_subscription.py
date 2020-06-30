@@ -149,9 +149,17 @@ def subscribe(request):
         data = json.loads(request.body)
 
         # Example obtaining data
-        if data:
-            for key in data.keys():
-                print("{}: {}".format(key, data[key]))
+        if data and data.action:
+            if data.action == "subscribe":
+                print("Subscribing to data.")
+                print(data.payload)
+            elif data.action == "unsubscribe":
+                print("Unsubscribing..")
+                print(data.payload)
+            else:
+                print(data)
+        else:
+            print(data)
 
         # Example response sent back to front-end
         test = {"status": "All good!", "data": data}
