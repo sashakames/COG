@@ -75,7 +75,6 @@ test_data = {
 }
 
 # To pass data to front-end, use react-props and pass it a dictionary with key-value pairs
-react_props = test_data
 
 
 def lookup_and_render(request):
@@ -97,7 +96,7 @@ def lookup_and_render(request):
             },
         )
 
-    return render(request, "cog/subscription/subscribe_list.html", {"dbres": dbres})
+    react_props = dbres
 
 
 def delete_subscription(request):
@@ -186,38 +185,16 @@ def subscribe(request):
         return HttpResponse(json.dumps(test), content_type="application/json")
 
     if request.method == "GET":
-        if request.GET.get("action") == "modify":
-            return lookup_and_render(request)
-        else:
-            return render(
-                request,
-                "cog/subscription/subscribe.html",
-                {"react_files": react_files, "react_props": react_props},
-            )
-    elif request.POST.get("action") == "delete":
-        return delete_subscription(request)
+        lookup_and_render(request)
+        return render(
+            request,
+            "cog/subscription/subscribe.html",
+            {"react_files": react_files, "react_props": react_props},
+        )
     else:
-        period = request.POST.get("period", -1)
-        if period == -1:
-            return render(
-                request,
-                "cog/subscription/subscribe_done.html",
-                {"email": request.user.email, "error": "Invalid period"},
-            )
-
-
-
-
-
-            return render(
-                request,
-                "cog/subscription/subscribe_done.html",
-                {"email": request.user.email, "count": subs_count},
-            )
-        else:
-            return render(
-                request,
-                "cog/subscription/subscribe.html",
-                {"react_files": react_files, "react_props": react_props},
-            )
+        return render(
+            request,
+            "cog/subscription/subscribe.html",
+            {"react_files": react_files, "react_props": react_props},
+        )
 
