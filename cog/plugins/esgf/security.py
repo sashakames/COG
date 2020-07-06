@@ -299,7 +299,7 @@ class ESGFDatabaseManager():
                         period = PERIOD_CODE[pstr]
                     else:
                         return False
-                    newSubscriber = ESGFSubscribers(user_id=esgfUser.id, period=period)
+                    newSubscriber = ESGFSubscribers(user_id=esgfUser.id, period=period, name=struct['name'])
                     session.add(newSubscriber)
 
                     for keyname in SUBS_KEYS:
