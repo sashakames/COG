@@ -153,10 +153,29 @@ def subscribe(request):
         if data and data['action']:
             if data['action'] == "subscribe":
                 print("Subscribing to data.")
-                print(data['payload'])
+                try:
+
+                    esgfDatabaseManager.addUserSubscription(
+                        request.user, data)
+
+                except Exception as e:
+                    # log error
+                    error_cond = str(e)
+                    return render(
+                        request,
+                        "cog/subscription/subscribe_done.html",
+                        {
+                            "email": request.user.email,
+                            "error": "An Error Has Occurred While Processing Your Request. <p> {}".format(
+                                error_cond
+                            ),
+                        },
+                    )
+
             elif data['action'] == "unsubscribe":
                 print("Unsubscribing..")
                 print(data['payload'])
+
 
         # Example response sent back to front-end
         test = {"status": "All good!", "data": data}
@@ -182,47 +201,9 @@ def subscribe(request):
                 {"email": request.user.email, "error": "Invalid period"},
             )
 
-        subs_count = 0
-        error_cond = ""
-        keyarr = []
-        valarr = []
-        for i in range(1, 4):
 
-            keystr = "subscription_key{}".format(i)
-            keyres = request.POST.get(keystr, "")
 
-            valstr = "subscription_value{}".format(i)
-            valres = request.POST.get(valstr, "")
 
-            if len(keyres) < 2 or len(valres) < 2:
-                continue
-
-            keyarr.append(keyres)
-            valarr.append(valres)
-
-            subs_count = subs_count + 1
-
-        if subs_count > 0:
-
-            try:
-
-                esgfDatabaseManager.addUserSubscription(
-                    request.user, period, keyarr, valarr
-                )
-
-            except Exception as e:
-                # log error
-                error_cond = str(e)
-                return render(
-                    request,
-                    "cog/subscription/subscribe_done.html",
-                    {
-                        "email": request.user.email,
-                        "error": "An Error Has Occurred While Processing Your Request. <p> {}".format(
-                            error_cond
-                        ),
-                    },
-                )
 
             return render(
                 request,

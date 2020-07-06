@@ -17,7 +17,9 @@ from django.conf import settings
 OPENID_EXTENSIONS = [""] + [str(i) for i in range(1,100)]
 ESGF_OPENID_TEMPLATE="https://<ESGF_HOSTNAME>/esgf-idp/openid/<ESGF_USERNAME>"
 
+PERIOD_CODE = { 'daily' : 0, 'weekly' : 1,  'biweekly' : 2 ,'monthly' : 3}
 
+SUBS_KEYS = [ 'activities', 'experiments', 'models', 'frequencies', 'variables', 'realms']
 
 class ESGFDatabaseManager():
     '''Class that manages connections to the ESGF database.'''
@@ -282,7 +284,7 @@ class ESGFDatabaseManager():
                     session.commit()
                     session.close()    
                     
-    def addUserSubscription(self, user, period, keynames_arr, valuenames_arr):
+    def addUserSubscription(self, user, struct):
         for openid in user.profile.openids():
             
             # openid must match the configured ESGF host name
@@ -292,18 +294,26 @@ class ESGFDatabaseManager():
                 if esgfUser is not None:
                     session = self.Session()
 
+                    pstr = struct['period']
+                    if pstr in PERIOD_CODE:
+                        period = PERIOD_CODE[pstr]
+                    else:
+                        return False
                     newSubscriber = ESGFSubscribers(user_id=esgfUser.id, period=period)
                     session.add(newSubscriber)
 
-                    for key, val in zip(keynames_arr, valuenames_arr):
-                        term = ESGFTerms(keyname=key, valuename=val)
-                        term.subscriber = newSubscriber
-                        session.add(term)
+                    for keyname in SUBS_KEYS:
+                        valarr = struct[keyname]
+                        if len(valarr) > 0:
+                            val = ','.join(valarr)
+                            term = ESGFTerms(keyname=keyname, valuename=val)
+                            term.subscriber = newSubscriber
+                            session.add(term)
 
 
                     session.commit()
                     session.close()
-                    return
+                    return True
 
     def deleteUserSubscriptionById(self, id):
         session = self.Session()
