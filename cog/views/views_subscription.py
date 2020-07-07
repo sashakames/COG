@@ -96,7 +96,11 @@ def lookup_and_render(request):
             },
         )
 
-    react_props = dbres
+    react_props =  {
+    "post_url": "/subscription/",
+    "saved_subs": dbres
+    }
+    return react_props
 
 
 def delete_subscription(request):
@@ -185,13 +189,16 @@ def subscribe(request):
         return HttpResponse(json.dumps(test), content_type="application/json")
 
     if request.method == "GET":
-        lookup_and_render(request)
+        react_props = lookup_and_render(request)
+        print("1) Props are: " + str(react_props))
         return render(
             request,
             "cog/subscription/subscribe.html",
             {"react_files": react_files, "react_props": react_props},
         )
     else:
+        react_props = lookup_and_render(request)
+        print("2) Props are: " + str(react_props))
         return render(
             request,
             "cog/subscription/subscribe.html",
