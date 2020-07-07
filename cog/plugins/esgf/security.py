@@ -355,11 +355,14 @@ class ESGFDatabaseManager():
                      d = {}
                      d['period'] = y.period
                      d['name'] = y.name
+                     if d['name'] is None:
+                        d['name'] = ""
+
                      self.ret_struct[y.id] = d
             else:
 #                print(y.subscribers_id)
                 val = self.ret_struct[y.subscribers_id]
-                val[y.keyname] = y.valuename
+                val[y.keyname] = y.valuename.split(',')
 #                print(str(val))
                 self.ret_struct[y.subscribers_id] = val
 
