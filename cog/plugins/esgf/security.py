@@ -19,7 +19,8 @@ ESGF_OPENID_TEMPLATE="https://<ESGF_HOSTNAME>/esgf-idp/openid/<ESGF_USERNAME>"
 
 PERIOD_CODE = { 'daily' : 0, 'weekly' : 1,  'biweekly' : 2 ,'monthly' : 3}
 
-SUBS_KEYS = [ 'activities', 'experiments', 'models', 'frequencies', 'variables', 'realms']
+#SUBS_KEYS = [ 'activities', 'experiments', 'models', 'frequencies', 'variables', 'realms']
+SUBS_KEYS = [ 'activity_id', 'experiment_id', 'source_id', 'frequency', 'variable_id', 'realm']
 
 class ESGFDatabaseManager():
     '''Class that manages connections to the ESGF database.'''
