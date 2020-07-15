@@ -157,24 +157,24 @@ def subscribe(request):
             if data['action'] == "subscribe":
                 print("Subscribing to data.")
                 res = False
-                try:
+                #                try
+                res = esgfDatabaseManager.addUserSubscription(
+                    request.user, data['payload'])
 
-                    res = esgfDatabaseManager.addUserSubscription(
-                        request.user, data['payload'])
-
-                except Exception as e:
-                    # log error
-                    error_cond = str(e)
-                    return render(
-                        request,
-                        "cog/subscription/subscribe_done.html",
-                        {
-                            "email": request.user.email,
-                            "error": "An Error Has Occurred While Processing Your Request. <p> {}".format(
-                                error_cond
-                            ),
-                        },
-                    )
+                print("Result={}".format(str(res)))
+                # except Exception as e:
+                #     # log error
+                #     error_cond = str(e)
+                #     return render(
+                #         request,
+                #         "cog/subscription/subscribe_done.html",
+                #         {
+                #             "email": request.user.email,
+                #             "error": "An Error Has Occurred While Processing Your Request. <p> {}".format(
+                #                 error_cond
+                #             ),
+                #         },
+                #     )
 
             elif data['action'] == "unsubscribe":
                 print("Unsubscribing..")
