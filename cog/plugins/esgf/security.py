@@ -354,7 +354,8 @@ class ESGFDatabaseManager():
             if type(y) is ESGFSubscribers:
                 if not y.id in self.ret_struct:
                      d = {}
-                     d['period'] = PERIOD_CODE.keys()[y.period]
+                     rev_periods = list(PERIOD_CODE.keys())
+                     d['period'] = rev_periods[y.period]
                      assert y.period == PERIOD_CODE[d['period']]
                      d['name'] = y.name
                      if d['name'] is None:
