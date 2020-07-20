@@ -299,7 +299,7 @@ class ESGFDatabaseManager():
                     if pstr in PERIOD_CODE:
                         period = PERIOD_CODE[pstr]
                     else:
-                        return False
+                        return -1
                     newSubscriber = ESGFSubscribers(user_id=esgfUser.id, period=period, name=struct['name'])
                     session.add(newSubscriber)
 
@@ -313,8 +313,11 @@ class ESGFDatabaseManager():
 
 
                     session.commit()
+                    session.flush()
+                    session.refresh(newSubscriber)
+                    print("id: {}".format(str(newSubscriber.id)))
                     session.close()
-                    return True
+                    return int(newSubscriber.id)
 
     def deleteUserSubscriptionById(self, id):
         session = self.Session()
@@ -355,6 +358,7 @@ class ESGFDatabaseManager():
                 if not y.id in self.ret_struct:
                      d = {}
                      rev_periods = list(PERIOD_CODE.keys())
+#                     print("DEBUG: {} {}".format(str(y.period), str(rev_periods)))
                      d['period'] = rev_periods[y.period]
                      assert y.period == PERIOD_CODE[d['period']]
                      d['name'] = y.name

@@ -156,7 +156,7 @@ def subscribe(request):
         if data and data['action']:
             if data['action'] == "subscribe":
                 print("Subscribing to data.")
-                res = False
+                res = -1
                 #                try
                 res = esgfDatabaseManager.addUserSubscription(
                     request.user, data['payload'])
@@ -179,11 +179,11 @@ def subscribe(request):
             elif data['action'] == "unsubscribe":
                 print("Unsubscribing..")
                 print(data['payload'])
-                res = True
+                res = 0 
 
         # Example response sent back to front-end
-        if res:
-            test = {"status": "All good!", "data": data}
+        if res > -1:
+            test = {"status": "All good!", "data": data, "id" : res}
         else:
             test = {"status": "Not at all good!", "data": data}
         return HttpResponse(json.dumps(test), content_type="application/json")
