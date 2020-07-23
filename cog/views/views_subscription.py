@@ -179,7 +179,19 @@ def subscribe(request):
             elif data['action'] == "unsubscribe":
                 print("Unsubscribing..")
                 print(data['payload'])
-                res = True
+                payload = data['payload']
+                res = False
+                try:
+                    if len(payload) > 1:
+                        esgfDatabaseManager.deleteAllUserSubscriptions(request.user)
+                    else:
+                        subs_id = payload[0][0]
+                        dbres = esgfDatabaseManager.deleteUserSubscriptionById(subs_id)
+                    res = True
+                except Exception as e:
+                    # log error
+                    error_cond = str(e)
+                    print("Exception encountered deleting subscription {}".format(e))
 
         # Example response sent back to front-end
         if res:
