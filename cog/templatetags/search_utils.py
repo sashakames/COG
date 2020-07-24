@@ -195,8 +195,11 @@ def getDataNodeStatus(data_node):
         dnstatus = json.load(open(dnstatusfn))
     except Exception as e:
         return True
+    if data_node in ['acdisc.gesdisc.eosdis.nasa.gov']:
+        return True
 
     if data_node in dnstatus:
+
         return (dnstatus[data_node]['status'] == 1)
     return True
 
