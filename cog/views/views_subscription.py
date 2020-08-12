@@ -145,6 +145,7 @@ def temp_print(request, var_name, method="POST"):
 @login_required
 def subscribe(request):
 
+    res = False
     # Contains the data from the front-end POST requests
     if request.method == "POST":
 
@@ -185,7 +186,7 @@ def subscribe(request):
                     if len(payload) > 1:
                         esgfDatabaseManager.deleteAllUserSubscriptions(request.user)
                     else:
-                        subs_id = payload[0][0]
+                        subs_id = payload[0]
                         dbres = esgfDatabaseManager.deleteUserSubscriptionById(subs_id)
                     res = True
                 except Exception as e:
