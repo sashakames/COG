@@ -187,7 +187,7 @@ def subscribe(request):
                         esgfDatabaseManager.deleteAllUserSubscriptions(request.user)
                     else:
                         subs_id = payload[0]
-                        dbres = esgfDatabaseManager.deleteUserSubscriptionById(subs_id)
+                        esgfDatabaseManager.deleteUserSubscriptionById(subs_id)
                     res = True
                 except Exception as e:
                     # log error
