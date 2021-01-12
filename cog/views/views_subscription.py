@@ -20,11 +20,15 @@ from cog.plugins.esgf.security import esgfDatabaseManager
 import traceback
 import json
 
+from django.conf import settings
+
 # Code used for react components
 
 # Get directories for static files
-package_dir = os.path.dirname(os.path.abspath(__file__))
-static_dir = os.path.dirname(package_dir)
+static_dir = settings.STATIC_ROOT
+print('STATIC_ROOT')
+print(static_dir)
+
 js_dir = os.path.join(static_dir, "static/cog/cog-react/js/")
 css_dir = os.path.join(static_dir, "static/cog/cog-react/css/")
 
