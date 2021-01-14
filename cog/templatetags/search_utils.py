@@ -1,3 +1,4 @@
+
 from django import template
 from cog.models.search import searchMappings
 from cog.site_manager import siteManager
@@ -195,7 +196,7 @@ def getDataNodeStatus(data_node):
         dnstatus = json.load(open(dnstatusfn))
     except Exception as e:
         return True
-    if data_node in ['acdisc.gesdisc.eosdis.nasa.gov']:
+    if data_node in ['acdisc.gesdisc.eosdis.nasa.gov', 'gpm1.gesdisc.eosdis.nasa.gov', "aims3.llnl.gov","esgf-data2.llnl.gov", "esgf-data1.llnl.gov"]:
         return True
 
     if data_node in dnstatus:

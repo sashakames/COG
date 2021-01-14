@@ -23,6 +23,9 @@ def node_status(request):
 
     status_arr = []
 
+    if (len(dnstatus) == 0):
+        return	render(request, 'cog/status/node_status.html', { 'no_status' : True } )
+
     for n in sorted(dnstatus):
 
     	status_arr.append((n, dnstatus[n]["status"], dnstatus[n]["time"]))
